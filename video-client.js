@@ -7,7 +7,8 @@ if(!shopifyApp.video) {
 }
 
 shopifyApp.video.init = function (shopName, firebaseIdToken, callback) {
-    console.log("initApi", shopName, firebaseIdToken);
+    console.log("initApi", shopName);
+    console.error(new Error("MARC: Look at me, and delete me"));
     $.getJSON( config.shopifyApp.microserviceVideoBaseUrl+"/init/"+window.config.appName+"/"+shopName+"/"+firebaseIdToken+"?callback=?", function( res ) {
         console.log("greate you are signed in to the microservice-video:", res);  
         callback(null, res);

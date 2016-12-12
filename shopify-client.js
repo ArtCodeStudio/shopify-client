@@ -41,13 +41,13 @@ shopifyApp.initEmbeddedSDK = function (protocol, shop, callback) {
       debug: window.config.shopifyApp.debug
     }
     
-    console.log("init Embedded SDK with config", initSDKConfig);
+    // console.log("init Embedded SDK with config", initSDKConfig);
     
     ShopifyApp.init(initSDKConfig);
     
     // should be ready after success auth
     ShopifyApp.ready(function () {
-        console.log("READY YEA!");
+        //console.log("READY YEA!");
                 
         shopifyApp.signIn(window.config.shopifyApp.shopName, function(error, initApiRes) {
             if(error) {
@@ -68,20 +68,20 @@ shopifyApp.initEmbeddedSDK = function (protocol, shop, callback) {
  * @see https://help.shopify.com/api/sdks/embedded-app-sdk/initialization
  */
 shopifyApp.initShopify = function (protocol, shop, shopName, callback) {
-    console.log("initShopify", protocol, shop, shopName);
+    //console.log("initShopify", protocol, shop, shopName);
     
     // init shopify if this is in iframe, if not get access and redirect back to the shopify app page
     if(shopifyApp.inIframe()) {
-        console.log("Backend is in iframe");
+        //console.log("Backend is in iframe");
         shopifyApp.initEmbeddedSDK(protocol, shop, callback);    
     } else {
-        console.log("Backend is not in iframe");
+        console.error("Backend is not in iframe");
         shopifyApp.getAccess(shopName); // get access and redirect back to the shopify app page
     }
 }
 
 shopifyApp.initFirebase = function  () {
-    console.log("initFirebase");
+    //console.log("initFirebase");
     shopifyApp.firebase = firebase.initializeApp(config.firebase);
 }
 
@@ -107,7 +107,7 @@ shopifyApp.getShop= function (shopName) {
 shopifyApp.setShop = function (shop) {
     config.shopifyApp.shop = shop;
     config.shopifyApp.shopName = shopifyApp.getShopName(config.shopifyApp.shop);
-    console.log("setShop", shop, config.shopifyApp);
+    //console.log("setShop", shop, config.shopifyApp);
 };
 
 /**
@@ -116,7 +116,7 @@ shopifyApp.setShop = function (shop) {
 shopifyApp.setShopName = function (shopName) {
     config.shopifyApp.shop = shopifyApp.getShop(shopName);
     config.shopifyApp.shopName = shopName;
-    console.log("setShopName", shopName, config.shopifyApp);
+    //console.log("setShopName", shopName, config.shopifyApp);
 };
 
 /**
@@ -131,7 +131,7 @@ shopifyApp.setToken = function (accessToken) {
  * 
  */
 shopifyApp.getAccess = function (shopName) {
-    console.log("getAccess", shopName);
+    //console.log("getAccess", shopName);
     var accessRedirectUrl = config.shopifyApp.microserviceAuthBaseUrl+'/redirect/'+window.config.appName+'/'+shopName;
     
     // if in iframe redirect parent site
@@ -143,9 +143,9 @@ shopifyApp.getAccess = function (shopName) {
 };
 
 shopifyApp.initApi = function (shopName, firebaseIdToken, callback) {
-    console.log("initApi", shopName, firebaseIdToken);
+    //console.log("initApi", shopName, firebaseIdToken);
     $.getJSON( config.shopifyApp.microserviceApiBaseUrl+"/init/"+window.config.appName+"/"+shopName+"/"+firebaseIdToken+"?callback=?", function( res ) {
-        console.log("greate you are signed in. shop:", res);  
+        //console.log("greate you are signed in. shop:", res);  
         callback(null, res);
     });
 };
@@ -156,23 +156,27 @@ shopifyApp.initApi = function (shopName, firebaseIdToken, callback) {
  * 
  */
 shopifyApp.signIn = function (shopName, callback) {
-    console.log("signIn");
+    //console.log("signIn");
     
     shopifyApp.initFirebase();
             
     $.getJSON( config.shopifyApp.microserviceAuthBaseUrl+"/token/"+window.config.appName+"/"+shopName+"?callback=?", function( data ) {
                 
         if(data.status === 404) {
-            console.log("token not found", data );
+            console.error("token not found", data );
             shopifyApp.getAccess(shopName);
         } else if(_.isString(data.firebaseToken)) {
             
-            console.log("token", data.firebaseToken );
+            //console.log("token", data.firebaseToken );
+            
+            window.config.firebase.customToken = data.firebaseToken;
+            // window.config.firebase.uid = data.firebaseUid; not needed 
                       
             shopifyApp.firebase.auth().signInWithCustomToken(data.firebaseToken).then(function(user) {
-                console.log("firebase user", user);
+                window.config.firebase.user = user;
+                //console.log("firebase user", user);
                 user.getToken(/* forceRefresh */ true).then(function(firebaseIdToken) {
-                    console.log("firebaseIdToken", firebaseIdToken);
+                    //console.log("firebaseIdToken", firebaseIdToken);
                     window.config.firebase.idToken = firebaseIdToken;
                     // Send token to your backend via HTTPS
                     shopifyApp.initApi(shopName, firebaseIdToken, callback);
