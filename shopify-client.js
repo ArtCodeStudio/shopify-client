@@ -1,4 +1,4 @@
-if(!shopifyApp) {
+if ( !shopifyApp ) {
     var shopifyApp = {};
 }
 
@@ -39,16 +39,16 @@ shopifyApp.initEmbeddedSDK = function (protocol, shop, callback) {
       apiKey: shopifyApp.config.shopifyApp.apiKey,
       shopOrigin: protocol + shop,
       debug: shopifyApp.config.shopifyApp.debug
-    }
-    
+    };
+
     // console.log("init Embedded SDK with config", initSDKConfig);
-    
+
     ShopifyApp.init(initSDKConfig);
-    
+
     // should be ready after success auth
     ShopifyApp.ready(function () {
-        //console.log("READY YEA!");
-                
+        // console.log("READY YEA!");
+
         shopifyApp.signIn(shopifyApp.config.shopifyApp.shopName, function(error, initApiRes) {
             if(error) {
                 callback(null, error);
@@ -68,12 +68,12 @@ shopifyApp.initEmbeddedSDK = function (protocol, shop, callback) {
  * @see https://help.shopify.com/api/sdks/embedded-app-sdk/initialization
  */
 shopifyApp.initShopify = function (protocol, shop, shopName, callback) {
-    //console.log("initShopify", protocol, shop, shopName);
-    
+    // console.log("initShopify", protocol, shop, shopName);
+
     // init shopify if this is in iframe, if not get access and redirect back to the shopify app page
     if(shopifyApp.inIframe()) {
-        //console.log("Backend is in iframe");
-        shopifyApp.initEmbeddedSDK(protocol, shop, callback);    
+        // console.log("Backend is in iframe");
+        shopifyApp.initEmbeddedSDK(protocol, shop, callback);
     } else {
         console.error("Backend is not in iframe");
         shopifyApp.getAccess(shopName); // get access and redirect back to the shopify app page
@@ -81,7 +81,7 @@ shopifyApp.initShopify = function (protocol, shop, shopName, callback) {
 }
 
 shopifyApp.initFirebase = function  () {
-    //console.log("initFirebase");
+    // console.log("initFirebase");
     shopifyApp.firebase = firebase.initializeApp(shopifyApp.config.firebase);
 }
 
@@ -90,7 +90,7 @@ shopifyApp.initFirebase = function  () {
  * Get CURRENT_LOGGED_IN_SHOP from CURRENT_LOGGED_IN_SHOP.myshopify.com
  */
 shopifyApp.getShopName = function (shop) {
-    return shop.substring(0, shop.indexOf("."));
+    return shop.substring(0, shop.indexOf('.'));
 };
 
 /**
