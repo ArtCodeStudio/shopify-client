@@ -1,0 +1,9 @@
+{
+    "compilerOptions": {
+        "sourceMap": true,
+        "declaration": true
+    },
+    "files": [
+        "shopify-client.ts"
+    ]
+}
