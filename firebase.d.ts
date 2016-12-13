@@ -1,432 +1,415 @@
-// Type definitions for Firebase API 2.4.1
-// Project: https://www.firebase.com/docs/javascript/firebase
-// Definitions by: Vincent Botone <https://github.com/vbortone/>, Shin1 Kashimura <https://github.com/in-async/>, Sebastien Dubois <https://github.com/dsebastien/>, Szymon Stasik <https://github.com/ciekawy/>
-// Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
+/*
+copy from https://github.com/angular/angularfire2/blob/master/manual_typings/firebase3/firebase3.d.ts
+1. Delete goog namespaces
+2. Delete look of disaproval
+3. typealias firebase.Promise to Promise
+4. Union type FirebaseOAuthProvider
+5. Remove _noStructuralTyping from Promise classes
+6. Remove catch() and then() declarations from firebase.Thenable, and extend Promise<t>.
 
-interface FirebaseAuthResult {
-	auth: any;
-	expires: number;
+*/
+declare interface FirebaseService {
+  INTERNAL: Object;
+  app: firebase.app.App;
 }
 
-interface FirebaseDataSnapshot {
-	/**
-	 * Returns true if this DataSnapshot contains any data.
-	 * It is slightly more efficient than using snapshot.val() !== null.
-	 */
-	exists(): boolean;
-	/**
-	 * Gets the JavaScript object representation of the DataSnapshot.
-	 */
-	val(): any;
-	/**
-	 * Gets a DataSnapshot for the location at the specified relative path.
-	 */
-	child(childPath: string): FirebaseDataSnapshot;
-	/**
-	 * Enumerates through the DataSnapshot’s children (in the default order).
-	 */
-	forEach(childAction: (childSnapshot: FirebaseDataSnapshot) => void): boolean;
-	forEach(childAction: (childSnapshot: FirebaseDataSnapshot) => boolean): boolean;
-	/**
-	 * Returns true if the specified child exists.
-	 */
-	hasChild(childPath: string): boolean;
-	/**
-	 * Returns true if the DataSnapshot has any children.
-	 */
-	hasChildren(): boolean;
-	/**
-	 * Gets the key name of the location that generated this DataSnapshot.
-	 */
-	key(): string;
-	/**
-	 * @deprecated Use key() instead.
-	 * Gets the key name of the location that generated this DataSnapshot.
-	 */
-	name(): string;
-	/**
-	 * Gets the number of children for this DataSnapshot.
-	 */
-	numChildren(): number;
-	/**
-	 * Gets the Firebase reference for the location that generated this DataSnapshot.
-	 */
-	ref(): Firebase;
-	/**
-	 * Gets the priority of the data in this DataSnapshot.
-	 * @returns {string, number, null} The priority, or null if no priority was set.
-	 */
-	getPriority(): any; // string or number
-	/**
-	 * Exports the entire contents of the DataSnapshot as a JavaScript object.
-	 */
-	exportVal(): Object;
+declare interface FirebaseServiceNamespace {
+  app(app?: firebase.app.App): FirebaseService;
 }
 
-interface FirebaseOnDisconnect {
-	/**
-	 * Ensures the data at this location is set to the specified value when the client is disconnected
-	 * (due to closing the browser, navigating to a new page, or network issues).
-	 */
-	set(value: any, onComplete: (error: any) => void): void;
-	set(value: any): Promise<void>;
-	/**
-	 * Ensures the data at this location is set to the specified value and priority when the client is disconnected
-	 * (due to closing the browser, navigating to a new page, or network issues).
-	 */
-	setWithPriority(value: any, priority: string|number, onComplete: (error: any) => void): void;
-	setWithPriority(value: any, priority: string|number): Promise<void>;
-	/**
-	 * Writes the enumerated children at this Firebase location when the client is disconnected
-	 * (due to closing the browser, navigating to a new page, or network issues).
-	 */
-	update(value: Object, onComplete: (error: any) => void): void;
-	update(value: Object): Promise<void>;
-	/**
-	 * Ensures the data at this location is deleted when the client is disconnected
-	 * (due to closing the browser, navigating to a new page, or network issues).
-	 */
-	remove(onComplete: (error: any) => void): void;
-	remove(): Promise<void>;
-	/**
-	 * Cancels all previously queued onDisconnect() set or update events for this location and all children.
-	 */
-	cancel(onComplete: (error: any) => void): void;
-	cancel(): Promise<void>;
+declare interface Observer {
+  complete(): any;
+  error(error: Object): any;
+  next(value: any): any;
 }
 
-interface FirebaseQuery {
-	/**
-	 * Listens for data changes at a particular location.
-	 */
-	on(eventType: string, callback: (dataSnapshot: FirebaseDataSnapshot, prevChildName?: string) => void, cancelCallback?: (error: any) => void, context?: Object): (dataSnapshot: FirebaseDataSnapshot, prevChildName?: string) => void;
-	/**
-	 * Detaches a callback previously attached with on().
-	 */
-	off(eventType?: string, callback?: (dataSnapshot: FirebaseDataSnapshot, prevChildName?: string) => void, context?: Object): void;
-	/**
-	 * Listens for exactly one event of the specified event type, and then stops listening.
-	 */
-	once(eventType: string, successCallback: (dataSnapshot: FirebaseDataSnapshot) => void, context?: Object): void;
-	once(eventType: string, successCallback: (dataSnapshot: FirebaseDataSnapshot) => void, failureCallback?: (error: any) => void, context?: Object): void;
-	once(eventType: string): Promise<FirebaseDataSnapshot>
-	/**
-	 * Generates a new Query object ordered by the specified child key.
-	 */
-	orderByChild(key: string): FirebaseQuery;
-	/**
-	 * Generates a new Query object ordered by key name.
-	 */
-	orderByKey(): FirebaseQuery;
-	/**
-	 * Generates a new Query object ordered by child values.
-	 */
-	orderByValue(): FirebaseQuery;
-	/**
-	 * Generates a new Query object ordered by priority.
-	 */
-	orderByPriority(): FirebaseQuery;
-	/**
-	 * @deprecated Use limitToFirst() and limitToLast() instead.
-	 * Generates a new Query object limited to the specified number of children.
-	 */
-	limit(limit: number): FirebaseQuery;
-	/**
-	 * Creates a Query with the specified starting point.
-	 * The generated Query includes children which match the specified starting point.
-	 */
-	startAt(value: string, key?: string): FirebaseQuery;
-	startAt(value: number, key?: string): FirebaseQuery;
-	/**
-	 * Creates a Query with the specified ending point.
-	 * The generated Query includes children which match the specified ending point.
-	 */
-	endAt(value: string, key?: string): FirebaseQuery;
-	endAt(value: number, key?: string): FirebaseQuery;
-	/**
-	 * Creates a Query which includes children which match the specified value.
-	 */
-	equalTo(value: string|number|boolean, key?: string): FirebaseQuery;
-	/**
-	 * Generates a new Query object limited to the first certain number of children.
-	 */
-	limitToFirst(limit: number): FirebaseQuery;
-	/**
-	 * Generates a new Query object limited to the last certain number of children.
-	 */
-	limitToLast(limit: number): FirebaseQuery;
-	/**
-	 * Gets a Firebase reference to the Query's location.
-	 */
-	ref(): Firebase;
+
+declare type FirebaseOAuthProvider = firebase.auth.GithubAuthProvider |
+                                     firebase.auth.GoogleAuthProvider |
+                                     firebase.auth.FacebookAuthProvider;
+
+declare class Promise_Instance<TYPE> implements PromiseLike<TYPE> {
+  constructor(resolver: (a: (a?: TYPE | PromiseLike<TYPE> | { then: any }) => any, b: (a?: any) => any) => any);
+  catch<RESULT>(onRejected: (a: any) => RESULT): Promise<RESULT>;
+  then<VALUE, RESULT>(opt_onFulfilled?: (a: TYPE) => VALUE, opt_onRejected?: (a: any) => any): RESULT;
 }
 
-interface Firebase extends FirebaseQuery {
-
-    /**
-     * EDIT von Pascal Garber 13.12.16
-     * @see https://firebase.google.com/support/guides/firebase-web
-     */
-    initializeApp(config: FirebaseStaticConfig): void;
-
-	/**
-	 * @deprecated Use authWithCustomToken() instead.
-	 * Authenticates a Firebase client using the provided authentication token or Firebase Secret.
-	 */
-	auth(authToken: string, onComplete: (error: any, result: FirebaseAuthResult) => void, onCancel?:(error: any) => void): void;
-	auth(authToken: string): Promise<FirebaseAuthResult>;
-	/**
-	 * Authenticates a Firebase client using an authentication token or Firebase Secret.
-	 */
-	authWithCustomToken(autoToken: string, onComplete: (error: any, authData: FirebaseAuthData) => void, options?:Object): void;
-	authWithCustomToken(autoToken: string, options?:Object): Promise<FirebaseAuthData>;
-	/**
-	 * Authenticates a Firebase client using a new, temporary guest account.
-	 */
-	authAnonymously(onComplete: (error: any, authData: FirebaseAuthData) => void, options?: Object): void;
-	authAnonymously(options?: Object): Promise<FirebaseAuthData>;
-	/**
-	 * Authenticates a Firebase client using an email / password combination.
-	 */
-	authWithPassword(credentials: FirebaseCredentials, onComplete: (error: any, authData: FirebaseAuthData) => void, options?: Object): void;
-	authWithPassword(credentials: FirebaseCredentials, options?: Object): Promise<FirebaseAuthData>;
-	/**
-	 * Authenticates a Firebase client using a popup-based OAuth flow.
-	 */
-	authWithOAuthPopup(provider: string, onComplete:(error: any, authData: FirebaseAuthData) => void, options?: Object): void;
-	authWithOAuthPopup(provider: string, options?: Object): Promise<FirebaseAuthData>;
-	/**
-	 * Authenticates a Firebase client using a redirect-based OAuth flow.
-	 */
-	authWithOAuthRedirect(provider: string, onComplete: (error: any) => void, options?: Object): void;
-	authWithOAuthRedirect(provider: string, options?: Object): Promise<void>;
-	/**
-	 * Authenticates a Firebase client using OAuth access tokens or credentials.
-	 */
-	authWithOAuthToken(provider: string, credentials: string|Object, onComplete: (error: any, authData: FirebaseAuthData) => void, options?: Object): void;
-	authWithOAuthToken(provider: string, credentials: string|Object, options?: Object): Promise<FirebaseAuthData>;
-	/**
-	 * Synchronously access the current authentication state of the client.
-	 */
-	getAuth(): FirebaseAuthData;
-	/**
-	 * Listen for changes to the client's authentication state.
-	 */
-	onAuth(onComplete: (authData: FirebaseAuthData) => void, context?: Object): void;
-	/**
-	 * Detaches a callback previously attached with onAuth().
-	 */
-	offAuth(onComplete: (authData: FirebaseAuthData) => void, context?: Object): void;
-	/**
-	 * Unauthenticates a Firebase client.
-	 */
-	unauth(): void;
-	/**
-	 * Gets a Firebase reference for the location at the specified relative path.
-	 */
-	child(childPath: string): Firebase;
-	/**
-	 * Gets a Firebase reference to the parent location.
-	 */
-	parent(): Firebase;
-	/**
-	 * Gets a Firebase reference to the root of the Firebase.
-	 */
-	root(): Firebase;
-	/**
-	 * Returns the last token in a Firebase location.
-	 */
-	key(): string;
-	/**
-	 * @deprecated Use key() instead.
-	 * Returns the last token in a Firebase location.
-	 */
-	name(): string;
-	/**
-	 * Gets the absolute URL corresponding to this Firebase reference's location.
-	 */
-	toString(): string;
-	/**
-	 * Writes data to this Firebase location.
-	 */
-	set(value: any, onComplete: (error: any) => void): void;
-	set(value: any): Promise<void>;
-	/**
-	 * Writes the enumerated children to this Firebase location.
-	 */
-	update(value: Object, onComplete: (error: any) => void): void;
-	update(value: Object): Promise<void>;
-	/**
-	 * Removes the data at this Firebase location.
-	 */
-	remove(onComplete: (error: any) => void): void;
-	remove(): Promise<void>;
-	/**
-	 * Generates a new child location using a unique name and returns a Firebase reference to it.
-	 * @returns {Firebase} A Firebase reference for the generated location.
-	 */
-	push(value?: any, onComplete?: (error: any) => void): FirebaseWithPromise<void>;
-	/**
-	 * Writes data to this Firebase location. Like set() but also specifies the priority for that data.
-	 */
-	setWithPriority(value: any, priority: string|number, onComplete: (error: any) => void): void;
-	setWithPriority(value: any, priority: string|number): Promise<void>;
-	/**
-	 * Sets a priority for the data at this Firebase location.
-	 */
-	setPriority(priority: string|number, onComplete: (error: any) => void): void;
-	setPriority(priority: string|number): Promise<void>;
-	/**
-	 * Atomically modifies the data at this location.
-	 */
-	transaction(updateFunction: (currentData: any)=> any, onComplete?: (error: any, committed: boolean, snapshot: FirebaseDataSnapshot) => void, applyLocally?: boolean): void;
-	/**
-	 * Creates a new user account using an email / password combination.
-	 */
-	createUser(credentials: FirebaseCredentials, onComplete: (error: any, userData: any) => void): void;
-	/**
-	 * Updates the email associated with an email / password user account.
-	 */
-	changeEmail(credentials: FirebaseChangeEmailCredentials, onComplete: (error: any) => void): void;
-	/**
-	 * Change the password of an existing user using an email / password combination.
-	 */
-	changePassword(credentials: FirebaseChangePasswordCredentials, onComplete: (error: any) => void): void;
-	/**
-	 * Removes an existing user account using an email / password combination.
-	 */
-	removeUser(credentials: FirebaseCredentials, onComplete: (error: any) => void): void;
-	/**
-	 * Sends a password-reset email to the owner of the account, containing a token that may be used to authenticate and change the user password.
-	 */
-	resetPassword(credentials: FirebaseResetPasswordCredentials, onComplete: (error: any) => void): void;
-	onDisconnect(): FirebaseOnDisconnect;
+declare namespace firebase {
+  type AuthTokenData = { accessToken: string, expirationTime: number, refreshToken: string };
 }
-
-interface FirebaseWithPromise<T> extends Firebase, Promise<T> {}
-
-interface FirebaseStaticConfig {
-    apiKey: string;
-    authDomain: string;
-    databaseURL: string;
+declare namespace firebase {
+  type AuthTokenListener = (a: string) => void;
 }
-
-interface FirebaseStatic {
-	/**
-	 * Constructs a new Firebase reference from a full Firebase URL.
-	 */
-	new (firebaseURL: string): Firebase;
-
-	/**
-	 * Manually disconnects the Firebase client from the server and disables automatic reconnection.
-	 */
-	goOffline(): void;
-	/**
-	 * Manually reestablishes a connection to the Firebase server and enables automatic reconnection.
-	 */
-	goOnline(): void;
-
-	ServerValue: {
-		/**
-		 * A placeholder value for auto-populating the current timestamp
-		 * (time since the Unix epoch, in milliseconds) by the Firebase servers.
-		 */
-		TIMESTAMP: any;
-	};
+declare namespace firebase {
+  type CompleteFn = () => void;
 }
-declare var Firebase: FirebaseStatic;
+declare namespace firebase {
+  type ErrorFn = (a: Object) => void;
+}
+declare namespace firebase {
+  interface FirebaseError {
+    code: string;
+    message: string;
+    name: string;
+    stack: string;
+  }
+}
+declare namespace firebase {
+  type NextFn = (a: any) => void;
+}
+declare namespace firebase {
+  class Promise<T> extends Promise_Instance<T> {
+    static all(values: firebase.Promise<any>[]): firebase.Promise<any[]>;
+    static reject(error: Object): firebase.Promise<any>;
+    static resolve<T>(value: T): firebase.Promise<T>;
+  }
+  class Promise_Instance<T> implements firebase.Thenable<any> {
+    constructor(resolver: (a?: (a: T) => void, b?: (a: Object) => void) => any);
+    catch(onReject?: (a: Object) => any): firebase.Thenable<any>;
+    then(onResolve?: (a: T) => any, onReject?: (a: Object) => any): firebase.Promise<any>;
+  }
+}
+declare namespace firebase {
+  var SDK_VERSION: string;
+}
+declare namespace firebase {
+  type Subscribe = (a?: ((a: any) => void) | Observer, b?: (a: Object) => void, c?: () => void) => () => void;
+}
+declare namespace firebase {
+  interface Thenable<T> extends Promise<T> {
+    //Removed definitions of catch() and then(), and extended Promise.
+  }
+}
+declare namespace firebase {
+  type Unsubscribe = () => void;
+}
+declare namespace firebase {
+  interface User extends firebase.UserInfo {
+    delete(): firebase.Promise<void>;
+    emailVerified: boolean;
+    getToken(opt_forceRefresh?: boolean): firebase.Promise<string>;
+    isAnonymous: boolean;
+    link(credential: firebase.auth.AuthCredential): firebase.Promise<firebase.User>;
+    linkWithPopup(provider: firebase.auth.AuthProvider): firebase.Promise<{ credential: firebase.auth.AuthCredential, user: firebase.User }>;
+    linkWithRedirect(provider: firebase.auth.AuthProvider): firebase.Promise<void>;
+    providerData: (firebase.UserInfo)[];
+    reauthenticate(credential: firebase.auth.AuthCredential): firebase.Promise<void>;
+    refreshToken: string;
+    reload(): firebase.Promise<void>;
+    sendEmailVerification(): firebase.Promise<void>;
+    unlink(providerId: string): firebase.Promise<firebase.User>;
+    updateEmail(newEmail: string): firebase.Promise<void>;
+    updatePassword(newPassword: string): firebase.Promise<void>;
+    updateProfile(profile: { displayName: string, photoURL: string }): firebase.Promise<void>;
+  }
+}
+declare namespace firebase {
+  interface UserInfo {
+    displayName: string;
+    email: string;
+    photoURL: string;
+    providerId: string;
+    uid: string;
+  }
+}
+declare namespace firebase {
+  function app(name: string): firebase.app.App;
+}
+declare namespace firebase.app {
+  interface App {
+    INTERNAL: Object;
+    auth(): firebase.auth.Auth;
+    database(): firebase.database.Database;
+    delete(): firebase.Promise<any>;
+    name: string;
+    options: Object;
+    storage(): firebase.storage.Storage;
+  }
+}
+declare namespace firebase {
+  var apps: (firebase.app.App)[];
+}
+declare namespace firebase {
+  function auth(app?: firebase.app.App): firebase.auth.Auth;
+}
+declare namespace firebase.auth {
+  interface ActionCodeInfo {
+  }
+}
+declare namespace firebase.auth {
+  interface Auth {
+    app: firebase.app.App;
+    applyActionCode(code: string): firebase.Promise<void>;
+    checkActionCode(code: string): firebase.Promise<firebase.auth.ActionCodeInfo>;
+    confirmPasswordReset(code: string, newPassword: string): firebase.Promise<void>;
+    createUserWithEmailAndPassword(email: string, password: string): firebase.Promise<firebase.User>;
+    currentUser: firebase.User;
+    fetchProvidersForEmail(email: string): firebase.Promise<string[]>;
+    getRedirectResult(): firebase.Promise<{ credential: firebase.auth.AuthCredential, user: firebase.User }>;
+    onAuthStateChanged(nextOrObserver: Object, opt_error?: (a: firebase.auth.Error) => any, opt_completed?: () => any): () => any;
+    sendPasswordResetEmail(email: string): firebase.Promise<void>;
+    signInAnonymously(): firebase.Promise<firebase.User>;
+    signInWithCredential(credential: firebase.auth.AuthCredential): firebase.Promise<firebase.User>;
+    signInWithCustomToken(token: string): firebase.Promise<firebase.User>;
+    signInWithEmailAndPassword(email: string, password: string): firebase.Promise<firebase.User>;
+    signInWithPopup(provider: firebase.auth.AuthProvider): firebase.Promise<{ credential: firebase.auth.AuthCredential, user: firebase.User }>;
+    signInWithRedirect(provider: firebase.auth.AuthProvider): firebase.Promise<void>;
+    signOut(): firebase.Promise<void>;
+    verifyPasswordResetCode(code: string): firebase.Promise<string>;
+  }
+}
+declare namespace firebase.auth {
+  interface AuthCredential {
+    provider: string;
+  }
+}
+declare namespace firebase.auth {
+  interface AuthProvider {
+    providerId: string;
+  }
+}
+declare namespace firebase.auth {
+  class EmailAuthProvider extends EmailAuthProvider_Instance {
+    static PROVIDER_ID: string;
+  }
+  class EmailAuthProvider_Instance implements firebase.auth.AuthProvider {
+    private noStructuralTyping_: any;
+    credential(email: string, password: string): firebase.auth.AuthCredential;
+    providerId: string;
+  }
+}
+declare namespace firebase.auth {
+  interface Error {
+    code: string;
+    message: string;
+  }
+}
+declare namespace firebase.auth {
+  class FacebookAuthProvider extends FacebookAuthProvider_Instance {
+    static PROVIDER_ID: string;
+  }
+  class FacebookAuthProvider_Instance implements firebase.auth.AuthProvider {
+    private noStructuralTyping_: any;
+    addScope(scope: string): any;
+    credential(token: string): firebase.auth.AuthCredential;
+    providerId: string;
+  }
+}
+declare namespace firebase.auth {
+  class GithubAuthProvider extends GithubAuthProvider_Instance {
+    static PROVIDER_ID: string;
+    // TODO fix upstream
+    static credential(token: string): firebase.auth.AuthCredential;
+  }
+  class GithubAuthProvider_Instance implements firebase.auth.AuthProvider {
+    private noStructuralTyping_: any;
+    addScope(scope: string): any;
+    providerId: string;
+  }
+}
+declare namespace firebase.auth {
+  class GoogleAuthProvider extends GoogleAuthProvider_Instance {
+    static PROVIDER_ID: string;
+  }
+  class GoogleAuthProvider_Instance implements firebase.auth.AuthProvider {
+    private noStructuralTyping_: any;
+    addScope(scope: string): any;
+    credential(idToken?: string, accessToken?: string): firebase.auth.AuthCredential;
+    providerId: string;
+  }
+}
+declare namespace firebase.auth {
+  class TwitterAuthProvider extends TwitterAuthProvider_Instance {
+    static PROVIDER_ID: string;
+    // TODO fix this upstream
+    static credential(token: string, secret: string): firebase.auth.AuthCredential;
+  }
+  class TwitterAuthProvider_Instance implements firebase.auth.AuthProvider {
+    private noStructuralTyping_: any;
+    providerId: string;
+  }
+}
+declare namespace firebase.auth {
+  type UserCredential = { credential: firebase.auth.AuthCredential, user: firebase.User };
+}
+declare namespace firebase {
+  function database(app?: firebase.app.App): firebase.database.Database;
+}
+declare namespace firebase.database {
+  interface DataSnapshot {
+    child(path: string): firebase.database.DataSnapshot;
+    exists(): boolean;
+    exportVal(): any;
+    forEach(action: (a: firebase.database.DataSnapshot) => boolean): boolean;
+    getPriority(): string | number;
+    hasChild(path: string): boolean;
+    hasChildren(): boolean;
+    key: string;
+    numChildren(): number;
+    ref: firebase.database.Reference;
+    val(): any;
+  }
+}
+declare namespace firebase.database {
+  interface Database {
+    app: firebase.app.App;
+    goOffline(): any;
+    goOnline(): any;
+    ref(path?: string): firebase.database.Reference;
+    refFromURL(url: string): firebase.database.Reference;
+  }
+}
+declare namespace firebase.database {
+  interface OnDisconnect {
+    cancel(onComplete?: (a: Object) => any): firebase.Promise<void>;
+    remove(onComplete?: (a: Object) => any): firebase.Promise<void>;
+    set(value: any, onComplete?: (a: Object) => any): firebase.Promise<void>;
+    setWithPriority(value: any, priority: number | string, onComplete?: (a: Object) => any): firebase.Promise<void>;
+    update(values: Object, onComplete?: (a: Object) => any): firebase.Promise<void>;
+  }
+}
+declare namespace firebase.database {
+  interface Query {
+    endAt(value: number | string | boolean, key?: string): firebase.database.Query;
+    equalTo(value: number | string | boolean, key?: string): firebase.database.Query;
+    limitToFirst(limit: number): firebase.database.Query;
+    limitToLast(limit: number): firebase.database.Query;
+    off(eventType?: string, callback?: (a: firebase.database.DataSnapshot, b?: string) => any, context?: Object): any;
+    on(eventType: string, callback: (a: firebase.database.DataSnapshot, b?: string) => any, cancelCallbackOrContext?: Object, context?: Object): (a: firebase.database.DataSnapshot, b?: string) => any;
+    once(eventType: string, callback?: (a: firebase.database.DataSnapshot, b?: string) => any): firebase.Promise<any>;
+    orderByChild(path: string): firebase.database.Query;
+    orderByKey(): firebase.database.Query;
+    orderByPriority(): firebase.database.Query;
+    orderByValue(): firebase.database.Query;
+    ref: firebase.database.Reference;
+    startAt(value: number | string | boolean, key?: string): firebase.database.Query;
+    toString(): string;
+  }
+}
+declare namespace firebase.database {
+  interface Reference extends firebase.database.Query {
+    child(path: string): firebase.database.Reference;
+    key: string;
+    onDisconnect(): firebase.database.OnDisconnect;
+    parent: firebase.database.Reference;
+    push(value?: any, onComplete?: (a: Object) => any): firebase.database.ThenableReference;
+    remove(onComplete?: (a: Object) => any): firebase.Promise<void>;
+    root: firebase.database.Reference;
+    set(value: any, onComplete?: (a: Object) => any): firebase.Promise<void>;
+    setPriority(priority: string | number, onComplete: (a: Object) => any): firebase.Promise<void>;
+    setWithPriority(newVal: any, newPriority: string | number, onComplete?: (a: Object) => any): firebase.Promise<void>;
+    transaction(transactionUpdate: (a: any) => any, onComplete?: (a: Object, b: boolean, c: firebase.database.DataSnapshot) => any, applyLocally?: boolean): firebase.Promise<{ committed: boolean, snapshot: firebase.database.DataSnapshot }>;
+    update(values: Object, onComplete?: (a: Object) => any): firebase.Promise<void>;
+  }
+}
+declare namespace firebase.database.ServerValue {
+}
+declare namespace firebase.database {
+  interface ThenableReference extends firebase.database.Reference, firebase.Thenable<void> {
+  }
+}
+declare namespace firebase.database {
+  function enableLogging(logger?: any, persistent?: boolean): any;
+}
+declare namespace firebase {
+  function initializeApp(options: Object, name?: string): firebase.app.App;
+}
+declare namespace firebase {
+  function storage(app?: firebase.app.App): firebase.storage.Storage;
+}
+declare namespace firebase.storage {
+  interface FullMetadata extends firebase.storage.UploadMetadata {
+    bucket: string;
+    downloadURLs: string[];
+    fullPath: string;
+    generation: string;
+    metageneration: string;
+    name: string;
+    size: number;
+    timeCreated: string;
+    updated: string;
+  }
+}
+declare namespace firebase.storage {
+  interface Reference {
+    bucket: string;
+    child(path: string): firebase.storage.Reference;
+    delete(): Promise<void>;
+    fullPath: string;
+    getDownloadURL(): Promise<string>;
+    getMetadata(): Promise<firebase.storage.FullMetadata>;
+    name: string;
+    parent: firebase.storage.Reference;
+    put(blob: Blob, metadata?: firebase.storage.UploadMetadata): firebase.storage.UploadTask;
+    root: firebase.storage.Reference;
+    storage: firebase.storage.Storage;
+    toString(): string;
+    updateMetadata(metadata: firebase.storage.SettableMetadata): Promise<firebase.storage.FullMetadata>;
+  }
+}
+declare namespace firebase.storage {
+  interface SettableMetadata {
+    cacheControl: string;
+    contentDisposition: string;
+    contentEncoding: string;
+    contentLanguage: string;
+    contentType: string;
+    customMetadata: { [key: string]: string };
+  }
+}
+declare namespace firebase.storage {
+  interface Storage {
+    app: firebase.app.App;
+    maxOperationRetryTime: number;
+    maxUploadRetryTime: number;
+    ref(path?: string): firebase.storage.Reference;
+    refFromURL(url: string): firebase.storage.Reference;
+    setMaxOperationRetryTime(time: number): any;
+    setMaxUploadRetryTime(time: number): any;
+  }
+}
+declare namespace firebase.storage {
+  type TaskEvent = string;
+  var TaskEvent: {
+    STATE_CHANGED: TaskEvent,
+  };
+}
+declare namespace firebase.storage {
+  type TaskState = string;
+  var TaskState: {
+    CANCELED: TaskState,
+    ERROR: TaskState,
+    PAUSED: TaskState,
+    RUNNING: TaskState,
+    SUCCESS: TaskState,
+  };
+}
+declare namespace firebase.storage {
+  interface UploadMetadata extends firebase.storage.SettableMetadata {
+    md5Hash: string;
+  }
+}
+declare namespace firebase.storage {
+  interface UploadTask {
+    cancel(): boolean;
+    on(event: firebase.storage.TaskEvent, nextOrObserver?: Object, error?: (a: Object) => any, complete?: () => any): (...a: any[]) => any;
+    pause(): boolean;
+    resume(): boolean;
+    snapshot: firebase.storage.UploadTaskSnapshot;
+  }
+}
+declare namespace firebase.storage {
+  interface UploadTaskSnapshot {
+    bytesTransferred: number;
+    downloadURL: string;
+    metadata: firebase.storage.FullMetadata;
+    ref: firebase.storage.Reference;
+    state: firebase.storage.TaskState;
+    task: firebase.storage.UploadTask;
+    totalBytes: number;
+  }
+}
 
 declare module 'firebase' {
-	export = Firebase;
-}
-
-// Reference: https://www.firebase.com/docs/web/api/firebase/getauth.html
-interface FirebaseAuthData {
-	uid: string;
-	provider: string;
-	token: string;
-	expires: number;
-	auth: Object;
-	google?: FirebaseAuthDataGoogle;
-	twitter?: FirebaseAuthDataTwitter;
-	github?: FirebaseAuthDataGithub;
-	facebook?: FirebaseAuthDataFacebook;
-	password?: FirebaseAuthDataPassword;
-	anonymous?: any;
-}
-
-interface FirebaseAuthDataPassword{
-	email: string;
-	isTemporaryPassword: boolean;
-	profileImageURL: string;
-}
-
-interface FirebaseAuthDataTwitter{
-	id: string;
-	accessToken: string;
-	accessTokenSecret: string;
-	displayName: string;
-	username: string;
-	profileImageURL: string;
-	cachedUserProfile: any;
-}
-
-interface FirebaseAuthDataGithub{
-	id: string;
-	accessToken: string;
-	displayName: string;
-	email?: string;
-	username: string;
-	profileImageURL: string;
-	cachedUserProfile: any;
-}
-
-interface FirebaseAuthDataFacebook{
-	id: string;
-	accessToken: string;
-	displayName: string;
-	email?: string;
-	profileImageURL: string;
-	cachedUserProfile: any;
-}
-
-interface FirebaseAuthDataGoogle {
-	accessToken: string;
-	cachedUserProfile: FirebaseAuthDataGoogleCachedUserProfile;
-	displayName: string;
-	email?: string;
-	id: string;
-	profileImageURL: string;
-}
-
-interface FirebaseAuthDataGoogleCachedUserProfile {
-	"family name"?: string;
-	gender?: string;
-	"given name"?: string;
-	id?: string;
-	link?: string;
-	locale?: string;
-	name?: string;
-	picture?: string;
-}
-
-interface FirebaseCredentials {
-	email: string;
-	password: string;
-}
-
-interface FirebaseChangePasswordCredentials {
-	email: string;
-	oldPassword: string;
-	newPassword: string;
-}
-
-interface FirebaseChangeEmailCredentials {
-	oldEmail: string;
-	newEmail: string;
-	password: string;
-}
-
-interface FirebaseResetPasswordCredentials {
-	email: string;
+  export = firebase;
 }
