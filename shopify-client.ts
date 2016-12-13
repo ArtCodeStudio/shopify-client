@@ -4,31 +4,7 @@
 
 /// <reference path='shopifyEASDK.d.ts' />
 /// <reference path='firebase.d.ts' />
-
-
-interface IShopifyClientConfigFirebase extends Object {
-    customToken?: string;
-    idToken?: string;
-    messagingSenderId?: string;
-    user?: any; // TODO firebase user Object and move to class
-}
-
-interface IShopifyClientConfigShopify {
-    apiKey: string;
-    microserviceApiBaseUrl: string;
-    microserviceAuthBaseUrl: string;
-    microserviceVideoBaseUrl: string;
-    protocol: string;
-    shop: string;
-    shopName: string;
-}
-
-interface IShopifyClientConfig {
-    appName: string;
-    firebase: IShopifyClientConfigFirebase;
-    shopifyApp: IShopifyClientConfigShopify;
-    debug: boolean;
-}
+/// <reference path='shopify-client-config.d.ts' />
 
 class ShopifyClient {
 
@@ -78,7 +54,7 @@ class ShopifyClient {
             debug: this.config.debug
         };
 
-        var thisObj = this;
+        let thisObj = this;
 
         // console.log('init Embedded SDK with config', initSDKConfig);
 
@@ -164,7 +140,7 @@ class ShopifyClient {
      */
     getAccess (shopName): any {
         // console.log('getAccess', shopName);
-        let accessRedirectUrl = this.config.shopifyApp.microserviceAuthBaseUrl + '/redirect/' + this.config.appName + '/' + shopName;
+        let accessRedirectUrl = `${this.config.shopifyApp.microserviceAuthBaseUrl}/redirect/${this.config.appName}/${shopName}`;
 
         // if in iframe redirect parent site
         if(this.inIframe()) {
@@ -176,8 +152,8 @@ class ShopifyClient {
 
     initApi (shopName, firebaseIdToken, callback): any {
         // console.log('initApi', shopName, firebaseIdToken);
-
-        $.getJSON( this.config.shopifyApp.microserviceApiBaseUrl+'/init/'+this.config.appName+'/'+shopName+'/'+firebaseIdToken+'?callback=?', (data: any, textStatus: string, jqXHR: JQueryXHR) => {
+        let url = `${this.config.shopifyApp.microserviceApiBaseUrl}/init/${this.config.appName}/${shopName}/${firebaseIdToken}?callback=?`;
+        $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
             // console.log('greate you are signed in. shop:', data);  
             callback(null, data);
         });
@@ -192,27 +168,29 @@ class ShopifyClient {
         // console.log('signIn');
 
         this.initFirebase();
+        let thisObj = this;
 
-        $.getJSON( this.config.shopifyApp.microserviceAuthBaseUrl+'/token/'+this.config.appName+'/'+shopName+'?callback=?', (data: any, textStatus: string, jqXHR: JQueryXHR) => {
+        let url = `${this.config.shopifyApp.microserviceAuthBaseUrl}/token/${this.config.appName}/${shopName}?callback=?`;
+        $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
 
             if (data.status === 404) {
                 console.error('token not found', data );
-                this.getAccess(shopName);
+                thisObj.getAccess(shopName);
             } else if (_.isString(data.firebaseToken)) {
 
                 // console.log('token', data.firebaseToken );
 
-                this.config.firebase.customToken = data.firebaseToken;
+                thisObj.config.firebase.customToken = data.firebaseToken;
                 // this.config.firebase.uid = data.firebaseUid; not needed 
 
-                this.firebase.auth().signInWithCustomToken(data.firebaseToken).then(function (user) {
-                    this.config.firebase.user = user;
+                thisObj.firebase.auth().signInWithCustomToken(data.firebaseToken).then(function (user) {
+                    thisObj.config.firebase.user = user;
                     // console.log('firebase user', user);
                     user.getToken(/* forceRefresh */ true).then(function(firebaseIdToken) {
                         // console.log('firebaseIdToken', firebaseIdToken);
-                        this.config.firebase.idToken = firebaseIdToken;
+                        thisObj.config.firebase.idToken = firebaseIdToken;
                         // Send token to your backend via HTTPS
-                        this.initApi(shopName, firebaseIdToken, callback);
+                        thisObj.initApi(shopName, firebaseIdToken, callback);
 
                     }).catch(function(error) {
                         // Handle error
@@ -231,15 +209,16 @@ class ShopifyClient {
     };
 
     singOut (accessToken, callback): any {
-        $.getJSON( this.config.shopifyApp.microserviceApiBaseUrl+'/signout/'+this.config.appName+'/'+this.config.shopifyApp.shopName+'?callback=?', (data: any, textStatus: string, jqXHR: JQueryXHR) => {
-            console.log('you are signed out:', data);  
+        let url = `${this.config.shopifyApp.microserviceApiBaseUrl}/signout/${this.config.appName}/${this.config.shopifyApp.shopName}?callback=?`;
+        $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
+            console.log('you are signed out:', data);
         });
     };
 
     api (resource, method, params, callback): any {
-        // console.log('service:', this.config.shopifyApp.microserviceApiBaseUrl+'/api/'+this.config.appName+'/'+this.config.shopifyApp.shopName+'/'+resource+'/'+method+'?callback=?');
-        $.getJSON( this.config.shopifyApp.microserviceApiBaseUrl+'/api/'+this.config.appName+'/'+this.config.shopifyApp.shopName+'/'+resource+'/'+method+'?callback=?', (data: any, textStatus: string, jqXHR: JQueryXHR) => {
-            console.log('api:', data);  
+        let url = `${this.config.shopifyApp.microserviceApiBaseUrl}/api/${this.config.appName}/${this.config.shopifyApp.shopName}/${resource}/${method}?callback=?`;
+        $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
+            console.log('api:', data);
             callback(null, data);
         });
     };

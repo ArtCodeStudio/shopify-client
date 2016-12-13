@@ -4,6 +4,7 @@
         "declaration": true
     },
     "files": [
-        "shopify-client.ts"
+        "shopify-client.ts",
+        "video-client.ts"
     ]
 }

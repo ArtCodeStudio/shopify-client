@@ -3,6 +3,7 @@
 /// <reference path='node_modules/@types/es6-promise/index.d.ts' />
 /// <reference path='shopifyEASDK.d.ts' />
 /// <reference path='firebase.d.ts' />
+/// <reference path='shopify-client-config.d.ts' />
 var ShopifyClient = (function () {
     function ShopifyClient(config) {
         this.config = config;
@@ -113,7 +114,7 @@ var ShopifyClient = (function () {
      */
     ShopifyClient.prototype.getAccess = function (shopName) {
         // console.log('getAccess', shopName);
-        var accessRedirectUrl = this.config.shopifyApp.microserviceAuthBaseUrl + '/redirect/' + this.config.appName + '/' + shopName;
+        var accessRedirectUrl = this.config.shopifyApp.microserviceAuthBaseUrl + "/redirect/" + this.config.appName + "/" + shopName;
         // if in iframe redirect parent site
         if (this.inIframe()) {
             window.top.location.href = accessRedirectUrl;
@@ -125,7 +126,8 @@ var ShopifyClient = (function () {
     ;
     ShopifyClient.prototype.initApi = function (shopName, firebaseIdToken, callback) {
         // console.log('initApi', shopName, firebaseIdToken);
-        $.getJSON(this.config.shopifyApp.microserviceApiBaseUrl + '/init/' + this.config.appName + '/' + shopName + '/' + firebaseIdToken + '?callback=?', function (data, textStatus, jqXHR) {
+        var url = this.config.shopifyApp.microserviceApiBaseUrl + "/init/" + this.config.appName + "/" + shopName + "/" + firebaseIdToken + "?callback=?";
+        $.getJSON(url, function (data, textStatus, jqXHR) {
             // console.log('greate you are signed in. shop:', data);  
             callback(null, data);
         });
@@ -138,25 +140,26 @@ var ShopifyClient = (function () {
      */
     ShopifyClient.prototype.signIn = function (shopName, callback) {
         // console.log('signIn');
-        var _this = this;
         this.initFirebase();
-        $.getJSON(this.config.shopifyApp.microserviceAuthBaseUrl + '/token/' + this.config.appName + '/' + shopName + '?callback=?', function (data, textStatus, jqXHR) {
+        var thisObj = this;
+        var url = this.config.shopifyApp.microserviceAuthBaseUrl + "/token/" + this.config.appName + "/" + shopName + "?callback=?";
+        $.getJSON(url, function (data, textStatus, jqXHR) {
             if (data.status === 404) {
                 console.error('token not found', data);
-                _this.getAccess(shopName);
+                thisObj.getAccess(shopName);
             }
             else if (_.isString(data.firebaseToken)) {
                 // console.log('token', data.firebaseToken );
-                _this.config.firebase.customToken = data.firebaseToken;
+                thisObj.config.firebase.customToken = data.firebaseToken;
                 // this.config.firebase.uid = data.firebaseUid; not needed 
-                _this.firebase.auth().signInWithCustomToken(data.firebaseToken).then(function (user) {
-                    this.config.firebase.user = user;
+                thisObj.firebase.auth().signInWithCustomToken(data.firebaseToken).then(function (user) {
+                    thisObj.config.firebase.user = user;
                     // console.log('firebase user', user);
                     user.getToken(/* forceRefresh */ true).then(function (firebaseIdToken) {
                         // console.log('firebaseIdToken', firebaseIdToken);
-                        this.config.firebase.idToken = firebaseIdToken;
+                        thisObj.config.firebase.idToken = firebaseIdToken;
                         // Send token to your backend via HTTPS
-                        this.initApi(shopName, firebaseIdToken, callback);
+                        thisObj.initApi(shopName, firebaseIdToken, callback);
                     })["catch"](function (error) {
                         // Handle error
                         callback(error);
@@ -173,14 +176,15 @@ var ShopifyClient = (function () {
     };
     ;
     ShopifyClient.prototype.singOut = function (accessToken, callback) {
-        $.getJSON(this.config.shopifyApp.microserviceApiBaseUrl + '/signout/' + this.config.appName + '/' + this.config.shopifyApp.shopName + '?callback=?', function (data, textStatus, jqXHR) {
+        var url = this.config.shopifyApp.microserviceApiBaseUrl + "/signout/" + this.config.appName + "/" + this.config.shopifyApp.shopName + "?callback=?";
+        $.getJSON(url, function (data, textStatus, jqXHR) {
             console.log('you are signed out:', data);
         });
     };
     ;
     ShopifyClient.prototype.api = function (resource, method, params, callback) {
-        // console.log('service:', this.config.shopifyApp.microserviceApiBaseUrl+'/api/'+this.config.appName+'/'+this.config.shopifyApp.shopName+'/'+resource+'/'+method+'?callback=?');
-        $.getJSON(this.config.shopifyApp.microserviceApiBaseUrl + '/api/' + this.config.appName + '/' + this.config.shopifyApp.shopName + '/' + resource + '/' + method + '?callback=?', function (data, textStatus, jqXHR) {
+        var url = this.config.shopifyApp.microserviceApiBaseUrl + "/api/" + this.config.appName + "/" + this.config.shopifyApp.shopName + "/" + resource + "/" + method + "?callback=?";
+        $.getJSON(url, function (data, textStatus, jqXHR) {
             console.log('api:', data);
             callback(null, data);
         });
