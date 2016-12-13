@@ -36,9 +36,9 @@ shopifyApp.getQueryParams = function (qs) {
 
 shopifyApp.initEmbeddedSDK = function (protocol, shop, callback) {
     var initSDKConfig = {
-      apiKey: window.config.shopifyApp.apiKey,
+      apiKey: shopifyApp.config.shopifyApp.apiKey,
       shopOrigin: protocol + shop,
-      debug: window.config.shopifyApp.debug
+      debug: shopifyApp.config.shopifyApp.debug
     }
     
     // console.log("init Embedded SDK with config", initSDKConfig);
@@ -49,11 +49,11 @@ shopifyApp.initEmbeddedSDK = function (protocol, shop, callback) {
     ShopifyApp.ready(function () {
         //console.log("READY YEA!");
                 
-        shopifyApp.signIn(window.config.shopifyApp.shopName, function(error, initApiRes) {
+        shopifyApp.signIn(shopifyApp.config.shopifyApp.shopName, function(error, initApiRes) {
             if(error) {
                 callback(null, error);
                 console.error(new Error(error));
-                return shopifyApp.getAccess(window.config.shopifyApp.shopName);
+                return shopifyApp.getAccess(shopifyApp.config.shopifyApp.shopName);
             }
             callback(null, initApiRes);
 
@@ -82,7 +82,7 @@ shopifyApp.initShopify = function (protocol, shop, shopName, callback) {
 
 shopifyApp.initFirebase = function  () {
     //console.log("initFirebase");
-    shopifyApp.firebase = firebase.initializeApp(config.firebase);
+    shopifyApp.firebase = firebase.initializeApp(shopifyApp.config.firebase);
 }
 
 
@@ -102,28 +102,28 @@ shopifyApp.getShop= function (shopName) {
 
 
 /**
- * Set the shop domain and shop name by the shop domain in config.shopifyApp
+ * Set the shop domain and shop name by the shop domain in shopifyApp.config.shopifyApp
  */
 shopifyApp.setShop = function (shop) {
-    config.shopifyApp.shop = shop;
-    config.shopifyApp.shopName = shopifyApp.getShopName(config.shopifyApp.shop);
-    //console.log("setShop", shop, config.shopifyApp);
+    shopifyApp.config.shopifyApp.shop = shop;
+    shopifyApp.config.shopifyApp.shopName = shopifyApp.getShopName(shopifyApp.config.shopifyApp.shop);
+    //console.log("setShop", shop, shopifyApp.config.shopifyApp);
 };
 
 /**
- * Set the shop domain and shop name by the shop name in config.shopifyApp
+ * Set the shop domain and shop name by the shop name in shopifyApp.config.shopifyApp
  */
 shopifyApp.setShopName = function (shopName) {
-    config.shopifyApp.shop = shopifyApp.getShop(shopName);
-    config.shopifyApp.shopName = shopName;
-    //console.log("setShopName", shopName, config.shopifyApp);
+    shopifyApp.config.shopifyApp.shop = shopifyApp.getShop(shopName);
+    shopifyApp.config.shopifyApp.shopName = shopName;
+    //console.log("setShopName", shopName, shopifyApp.config.shopifyApp);
 };
 
 /**
  * Set the access token in config.shopifyApp
  */
 shopifyApp.setToken = function (accessToken) {
-    config.shopifyApp.accessToken = accessToken;
+    shopifyApp.config.shopifyApp.accessToken = accessToken;
 };
 
 /**
@@ -132,7 +132,7 @@ shopifyApp.setToken = function (accessToken) {
  */
 shopifyApp.getAccess = function (shopName) {
     //console.log("getAccess", shopName);
-    var accessRedirectUrl = config.shopifyApp.microserviceAuthBaseUrl+'/redirect/'+window.config.appName+'/'+shopName;
+    var accessRedirectUrl = shopifyApp.config.shopifyApp.microserviceAuthBaseUrl+'/redirect/'+shopifyApp.config.appName+'/'+shopName;
     
     // if in iframe redirect parent site
     if(shopifyApp.inIframe()) {
@@ -144,7 +144,7 @@ shopifyApp.getAccess = function (shopName) {
 
 shopifyApp.initApi = function (shopName, firebaseIdToken, callback) {
     //console.log("initApi", shopName, firebaseIdToken);
-    $.getJSON( config.shopifyApp.microserviceApiBaseUrl+"/init/"+window.config.appName+"/"+shopName+"/"+firebaseIdToken+"?callback=?", function( res ) {
+    $.getJSON( shopifyApp.config.shopifyApp.microserviceApiBaseUrl+"/init/"+shopifyApp.config.appName+"/"+shopName+"/"+firebaseIdToken+"?callback=?", function( res ) {
         //console.log("greate you are signed in. shop:", res);  
         callback(null, res);
     });
@@ -160,7 +160,7 @@ shopifyApp.signIn = function (shopName, callback) {
     
     shopifyApp.initFirebase();
             
-    $.getJSON( config.shopifyApp.microserviceAuthBaseUrl+"/token/"+window.config.appName+"/"+shopName+"?callback=?", function( data ) {
+    $.getJSON( shopifyApp.config.shopifyApp.microserviceAuthBaseUrl+"/token/"+shopifyApp.config.appName+"/"+shopName+"?callback=?", function( data ) {
                 
         if(data.status === 404) {
             console.error("token not found", data );
@@ -169,15 +169,15 @@ shopifyApp.signIn = function (shopName, callback) {
             
             //console.log("token", data.firebaseToken );
             
-            window.config.firebase.customToken = data.firebaseToken;
-            // window.config.firebase.uid = data.firebaseUid; not needed 
+            shopifyApp.config.firebase.customToken = data.firebaseToken;
+            // shopifyApp.config.firebase.uid = data.firebaseUid; not needed 
                       
             shopifyApp.firebase.auth().signInWithCustomToken(data.firebaseToken).then(function(user) {
-                window.config.firebase.user = user;
+                shopifyApp.config.firebase.user = user;
                 //console.log("firebase user", user);
                 user.getToken(/* forceRefresh */ true).then(function(firebaseIdToken) {
                     //console.log("firebaseIdToken", firebaseIdToken);
-                    window.config.firebase.idToken = firebaseIdToken;
+                    shopifyApp.config.firebase.idToken = firebaseIdToken;
                     // Send token to your backend via HTTPS
                     shopifyApp.initApi(shopName, firebaseIdToken, callback);
                      
@@ -198,14 +198,14 @@ shopifyApp.signIn = function (shopName, callback) {
 };
 
 shopifyApp.singOut = function (accessToken, callback) {
-    $.getJSON( config.shopifyApp.microserviceApiBaseUrl+"/signout/"+window.config.appName+"/"+shopName+"?callback=?", function( result ) {
+    $.getJSON( shopifyApp.config.shopifyApp.microserviceApiBaseUrl+"/signout/"+shopifyApp.config.appName+"/"+shopName+"?callback=?", function( result ) {
         console.log("you are signed out:", result);  
     });
 };
 
 shopifyApp.api = function (resource, method, params, callback) {
-    // console.log('service:', config.shopifyApp.microserviceApiBaseUrl+"/api/"+window.config.appName+"/"+window.config.shopifyApp.shopName+"/"+resource+"/"+method+"?callback=?");
-    $.getJSON( config.shopifyApp.microserviceApiBaseUrl+"/api/"+window.config.appName+"/"+window.config.shopifyApp.shopName+"/"+resource+"/"+method+"?callback=?", function( result ) {
+    // console.log('service:', shopifyApp.config.shopifyApp.microserviceApiBaseUrl+"/api/"+shopifyApp.config.appName+"/"+shopifyApp.config.shopifyApp.shopName+"/"+resource+"/"+method+"?callback=?");
+    $.getJSON( shopifyApp.config.shopifyApp.microserviceApiBaseUrl+"/api/"+shopifyApp.config.appName+"/"+shopifyApp.config.shopifyApp.shopName+"/"+resource+"/"+method+"?callback=?", function( result ) {
         console.log("api:", result);  
         callback(null, result);
     });
