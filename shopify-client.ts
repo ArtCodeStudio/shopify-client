@@ -1,16 +1,20 @@
 /// <reference path='node_modules/@types/jquery/index.d.ts' />
-/// <reference path='node_modules/@types/underscore/index.d.ts' />
-/// <reference path='node_modules/@types/es6-promise/index.d.ts' />
+// <reference path='node_modules/@types/underscore/index.d.ts' />
+// <reference path='node_modules/@types/es6-promise/index.d.ts' />
 
 /// <reference path='shopifyEASDK.d.ts' />
-/// <reference path='firebase.d.ts' />
+// <reference path='firebase.d.ts' />
 /// <reference path='shopify-client-config.d.ts' />
+
+// import * as _ from 'node_modules/@types/underscore/index';
 
 class ShopifyClient {
 
     public config: IShopifyClientConfig;
 
-    public firebase: firebase.app.App
+    public firebase: any; // firebase.app.App
+
+    public ready: boolean = false;
 
     constructor(config: IShopifyClientConfig) {
         this.config = config;
@@ -33,7 +37,7 @@ class ShopifyClient {
      * 
      * @see http://stackoverflow.com/a/1099670
      */
-    getQueryParams(qs): any {
+    getQueryParams(qs: string): Object {
         qs = qs.split('+').join(' ');
 
         let params = {},
@@ -47,7 +51,7 @@ class ShopifyClient {
         return params;
     }
 
-    initEmbeddedSDK(protocol, shop, callback): any {
+    initEmbeddedSDK(protocol: string, shop: string, callback: (error?: any, data?: any) => void): any {
         let initSDKConfig = {
             apiKey: this.config.shopifyApp.apiKey,
             shopOrigin: protocol + shop,
@@ -66,7 +70,7 @@ class ShopifyClient {
 
             thisObj.signIn(thisObj.config.shopifyApp.shopName, function(error, initApiRes) {
                 if(error) {
-                    callback(null, error);
+                    callback(error, initApiRes);
                     console.error(new Error(error));
                     return thisObj.getAccess(thisObj.config.shopifyApp.shopName);
                 }
@@ -82,7 +86,7 @@ class ShopifyClient {
      * 
      * @see https://help.shopify.com/api/sdks/embedded-app-sdk/initialization
      */
-    initShopify(protocol, shop, shopName, callback): any {
+    initShopify(protocol: string, shop: string, shopName: string, callback: (error?: any, data?: any) => void): void {
         // console.log('initShopify', protocol, shop, shopName);
 
         // init shopify if this is in iframe, if not get access and redirect back to the shopify app page
@@ -95,23 +99,23 @@ class ShopifyClient {
         }
     }
 
-    initFirebase(): any {
+    initFirebase(): any { // firebase.app.App {
         // console.log('initFirebase');
-        this.firebase = firebase.initializeApp(this.config.firebase);
+        return this.firebase = firebase.initializeApp(this.config.firebase);
     }
 
 
     /**
      * Get CURRENT_LOGGED_IN_SHOP from CURRENT_LOGGED_IN_SHOP.myshopify.com
      */
-    getShopName (shop): any {
+    getShopName (shop: string): string {
         return shop.substring(0, shop.indexOf('.'));
     };
 
     /**
      * Get the shop domain e.g. CURRENT_LOGGED_IN_SHOP.myshopify.com from the shop name e.g. CURRENT_LOGGED_IN_SHOP 
      */
-    getShop (shopName): any {
+    getShop (shopName: string): string {
         return shopName + '.myshopify.com';
     };
 
@@ -119,7 +123,7 @@ class ShopifyClient {
     /**
      * Set the shop domain and shop name by the shop domain in this.config.shopifyApp
      */
-    setShop (shop): any {
+    setShop (shop: string): void {
         this.config.shopifyApp.shop = shop;
         this.config.shopifyApp.shopName = this.getShopName(this.config.shopifyApp.shop);
         // console.log('setShop', shop, this.config.shopifyApp);
@@ -128,7 +132,7 @@ class ShopifyClient {
     /**
      * Set the shop domain and shop name by the shop name in this.config.shopifyApp
      */
-    setShopName (shopName): any {
+    setShopName (shopName: string): void {
         this.config.shopifyApp.shop = this.getShop(shopName);
         this.config.shopifyApp.shopName = shopName;
         // console.log('setShopName', shopName, this.config.shopifyApp);
@@ -138,24 +142,27 @@ class ShopifyClient {
      * Initiates the sign-in flow using Shopify oauth sign in
      * 
      */
-    getAccess (shopName): any {
+    getAccess (shopName: string): void {
         // console.log('getAccess', shopName);
         let accessRedirectUrl = `${this.config.shopifyApp.microserviceAuthBaseUrl}/redirect/${this.config.appName}/${shopName}`;
 
         // if in iframe redirect parent site
-        if(this.inIframe()) {
+        if (this.inIframe()) {
             window.top.location.href = accessRedirectUrl;
         } else {
             window.location.href = accessRedirectUrl;
         }
     };
 
-    initApi (shopName, firebaseIdToken, callback): any {
+    initApi (shopName: string, firebaseIdToken: string, cb: (error: any, data?: any) => void ): void {
+        let thisObj = this;
         // console.log('initApi', shopName, firebaseIdToken);
         let url = `${this.config.shopifyApp.microserviceApiBaseUrl}/init/${this.config.appName}/${shopName}/${firebaseIdToken}?callback=?`;
         $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
             // console.log('greate you are signed in. shop:', data);  
-            callback(null, data);
+            // TODO check error
+            thisObj.ready = true; // TODO use event?
+            cb(null, data);
         });
     };
 
@@ -164,7 +171,7 @@ class ShopifyClient {
      * Otherwise get access using this.getAccess with redirections
      * 
      */
-    signIn (shopName, callback): any {
+    signIn (shopName: string, callback: (error?: any, data?: any) => void ): void {
         // console.log('signIn');
 
         this.initFirebase();
@@ -176,9 +183,9 @@ class ShopifyClient {
             if (data.status === 404) {
                 console.error('token not found', data );
                 thisObj.getAccess(shopName);
-            } else if (_.isString(data.firebaseToken)) {
+            } else if (typeof(data.firebaseToken) === 'string') {
 
-                // console.log('token', data.firebaseToken );
+                console.log('microservice-auth result', data );
 
                 thisObj.config.firebase.customToken = data.firebaseToken;
                 // this.config.firebase.uid = data.firebaseUid; not needed 
@@ -208,19 +215,19 @@ class ShopifyClient {
         });
     };
 
-    singOut (accessToken, callback): any {
+    singOut (accessToken: string, callback: (error?: any, data?: any) => void ): any {
         let url = `${this.config.shopifyApp.microserviceApiBaseUrl}/signout/${this.config.appName}/${this.config.shopifyApp.shopName}?callback=?`;
         $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
             console.log('you are signed out:', data);
         });
     };
 
-    api (resource, method, params, callback): any {
+    api (resource: string, method: string, params: Object, callback: (error?: any, data?: any) => void ): any {
         let url = `${this.config.shopifyApp.microserviceApiBaseUrl}/api/${this.config.appName}/${this.config.shopifyApp.shopName}/${resource}/${method}?callback=?`;
+        console.log('ShopifyClient.api request:', url);
         $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
-            console.log('api:', data);
+            console.log('ShopifyClient.api result:', data);
             callback(null, data);
         });
     };
-
 }

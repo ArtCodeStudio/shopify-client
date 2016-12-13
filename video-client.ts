@@ -12,7 +12,7 @@ class VideoAPI {
 
     constructor(config: IShopifyClientConfig, callback) {
         this.config = config;
-        console.log('initApi', this.config);
+        console.log('VideoAPI.constructor', this.config);
 
         let url = `${this.config.shopifyApp.microserviceVideoBaseUrl}/init/${this.config.appName}/${this.config.shopifyApp.shopName}/${this.config.firebase.idToken}?callback=?`;
 
@@ -26,9 +26,9 @@ class VideoAPI {
     api(resource, method, params, callback): any {
 
         let url = `${this.config.shopifyApp.microserviceApiBaseUrl}/api/${this.config.appName}/${this.config.shopifyApp.shopName}/${resource}/${method}?callback=?`;
-
+        console.log('ShopifyClient.api request:', url);
         $.getJSON( url, function( result ) {
-            console.log('api:', result);
+            console.log('ShopifyClient.api result:', result);
             callback(null, result);
         });
     };
