@@ -295,7 +295,7 @@ class VideoAPI extends Api {
         // this.config = config;
         console.log('VideoAPI.constructor', this.config);
 
-        let url = `${this.config.shopifyApp.microserviceVideoBaseUrl}/init/${this.config.appName}/${this.config.shopifyApp.shopName}/${this.config.firebase.idToken}?callback=?`;
+        let url = `${this.apiBaseUrl}/init/${this.config.appName}/${this.config.shopifyApp.shopName}/${this.config.firebase.idToken}?callback=?`;
 
         $.getJSON( url, function( res ) {
             console.log('greate you are signed in to the microservice-video:', res);

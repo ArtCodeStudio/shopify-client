@@ -232,7 +232,7 @@ var VideoAPI = (function (_super) {
         var _this = _super.call(this, config, apiBaseUrl) || this;
         // this.config = config;
         console.log('VideoAPI.constructor', _this.config);
-        var url = _this.config.shopifyApp.microserviceVideoBaseUrl + "/init/" + _this.config.appName + "/" + _this.config.shopifyApp.shopName + "/" + _this.config.firebase.idToken + "?callback=?";
+        var url = _this.apiBaseUrl + "/init/" + _this.config.appName + "/" + _this.config.shopifyApp.shopName + "/" + _this.config.firebase.idToken + "?callback=?";
         $.getJSON(url, function (res) {
             console.log('greate you are signed in to the microservice-video:', res);
             callback(null, res);
