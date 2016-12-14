@@ -6,7 +6,6 @@
         "module": "none"
     },
     "files": [
-        "shopify-client.ts",
-        "video-client.ts"
+        "shopify-client.ts"
     ]
 }

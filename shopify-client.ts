@@ -1,23 +1,76 @@
 /// <reference path='node_modules/@types/jquery/index.d.ts' />
-// <reference path='node_modules/@types/underscore/index.d.ts' />
-// <reference path='node_modules/@types/es6-promise/index.d.ts' />
+/// <reference path='node_modules/@types/underscore/index.d.ts' />
+/// <reference path='node_modules/@types/es6-promise/index.d.ts' />
 
 /// <reference path='shopifyEASDK.d.ts' />
-// <reference path='firebase.d.ts' />
-/// <reference path='shopify-client-config.d.ts' />
+/// <reference path='firebase.d.ts' />
 
-// import * as _ from 'node_modules/@types/underscore/index';
+declare interface IShopifyClientConfigFirebase extends Object {
+    apiKey: string,
+    authDomain: string,
+    databaseURL: string,
+    storageBucket: string,
+    messagingSenderId?: string;
 
-class ShopifyClient {
+    customToken?: string;
+    idToken?: string;
+    user?: any; // TODO firebase user Object and move to class
+}
 
-    public config: IShopifyClientConfig;
+declare interface IShopifyClientConfigShopify extends Object {
+    apiKey: string;
+    microserviceAuthBaseUrl: string;
+    protocol: string;
+    shop: string;
+    shopName: string;
+}
+
+declare interface IShopifyClientConfig extends Object {
+    appName: string;
+    firebase: IShopifyClientConfigFirebase;
+    shopifyApp: IShopifyClientConfigShopify;
+    debug: boolean;
+}
+
+class Api {
+
+    config: IShopifyClientConfig;
+
+    apiBaseUrl: string;
+
+    constructor(config: IShopifyClientConfig, apiBaseUrl: string) {
+        this.config = config;
+        this.apiBaseUrl = apiBaseUrl;
+    }
+
+    /**
+     * API calls are based on tthis bindings: https://github.com/MONEI/Shopify-api-node
+     * But wrapped with or own microserive: https://git.mediamor.de/jumplink.eu/microservice-shopify
+     */
+    call (resource: string, method: string, params: any, callback: (error?: any, data?: any) => void ): any {
+        let query = $.param(params);
+
+        if (query.length > 0) {
+            query = '&' + query;
+        }
+
+        let url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopifyApp.shopName}/${resource}/${method}?callback=?${query}`;
+        console.log('ShopifyClient.api request:', url);
+        return $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
+            console.log('ShopifyClient.api result:', data);
+            return callback(null, data);
+        });
+    };
+}
+
+class ShopifyClient extends Api {
 
     public firebase: any; // firebase.app.App
 
     public ready: boolean = false;
 
-    constructor(config: IShopifyClientConfig) {
-        this.config = config;
+    constructor(config: IShopifyClientConfig, apiBaseUrl: string) {
+        super(config, apiBaseUrl);
     }
 
     /**
@@ -157,7 +210,7 @@ class ShopifyClient {
     initApi (shopName: string, firebaseIdToken: string, cb: (error: any, data?: any) => void ): void {
         let thisObj = this;
         // console.log('initApi', shopName, firebaseIdToken);
-        let url = `${this.config.shopifyApp.microserviceApiBaseUrl}/init/${this.config.appName}/${shopName}/${firebaseIdToken}?callback=?`;
+        let url = `${this.apiBaseUrl}/init/${this.config.appName}/${shopName}/${firebaseIdToken}?callback=?`;
         $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
             // console.log('greate you are signed in. shop:', data);  
             // TODO check error
@@ -216,18 +269,45 @@ class ShopifyClient {
     };
 
     singOut (accessToken: string, callback: (error?: any, data?: any) => void ): any {
-        let url = `${this.config.shopifyApp.microserviceApiBaseUrl}/signout/${this.config.appName}/${this.config.shopifyApp.shopName}?callback=?`;
+        let url = `${this.apiBaseUrl}/signout/${this.config.appName}/${this.config.shopifyApp.shopName}?callback=?`;
         $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
             console.log('you are signed out:', data);
         });
     };
 
-    api (resource: string, method: string, params: Object, callback: (error?: any, data?: any) => void ): any {
-        let url = `${this.config.shopifyApp.microserviceApiBaseUrl}/api/${this.config.appName}/${this.config.shopifyApp.shopName}/${resource}/${method}?callback=?`;
-        console.log('ShopifyClient.api request:', url);
-        $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
-            console.log('ShopifyClient.api result:', data);
-            callback(null, data);
+    /**
+     * API calls are based on tthis bindings: https://github.com/MONEI/Shopify-api-node
+     */
+    api (resource: string, method: string, params: any, callback: (error?: any, data?: any) => void ): any {
+
+        console.log('ShopifyClient.api request:', resource, method, params);
+
+        return this.call(resource, method, params, callback);
+    };
+}
+
+class VideoAPI extends Api {
+
+    public config: IShopifyClientConfig;
+
+    constructor(config: IShopifyClientConfig, apiBaseUrl: string, callback) {
+        super(config, apiBaseUrl);
+        // this.config = config;
+        console.log('VideoAPI.constructor', this.config);
+
+        let url = `${this.config.shopifyApp.microserviceVideoBaseUrl}/init/${this.config.appName}/${this.config.shopifyApp.shopName}/${this.config.firebase.idToken}?callback=?`;
+
+        $.getJSON( url, function( res ) {
+            console.log('greate you are signed in to the microservice-video:', res);
+            callback(null, res);
         });
+    }
+
+    // MARC: Beispiel, bitte anpassen
+    api(resource, method, params, callback): any {
+
+        console.log('VideoAPI.api request:', resource, method, params);
+
+        return this.call(resource, method, params, callback);
     };
 }

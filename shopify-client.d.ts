@@ -1,11 +1,45 @@
 /// <reference path="node_modules/@types/jquery/index.d.ts" />
+/// <reference path="node_modules/@types/underscore/index.d.ts" />
+/// <reference path="node_modules/@types/es6-promise/index.d.ts" />
 /// <reference path="shopifyEASDK.d.ts" />
-/// <reference path="shopify-client-config.d.ts" />
-declare class ShopifyClient {
+/// <reference path="firebase.d.ts" />
+interface IShopifyClientConfigFirebase extends Object {
+    apiKey: string;
+    authDomain: string;
+    databaseURL: string;
+    storageBucket: string;
+    messagingSenderId?: string;
+    customToken?: string;
+    idToken?: string;
+    user?: any;
+}
+interface IShopifyClientConfigShopify extends Object {
+    apiKey: string;
+    microserviceAuthBaseUrl: string;
+    protocol: string;
+    shop: string;
+    shopName: string;
+}
+interface IShopifyClientConfig extends Object {
+    appName: string;
+    firebase: IShopifyClientConfigFirebase;
+    shopifyApp: IShopifyClientConfigShopify;
+    debug: boolean;
+}
+declare class Api {
     config: IShopifyClientConfig;
+    apiBaseUrl: string;
+    constructor(config: IShopifyClientConfig, apiBaseUrl: string);
+    /**
+     * API calls are based on tthis bindings: https://github.com/MONEI/Shopify-api-node
+     * But wrapped with or own microserive: https://git.mediamor.de/jumplink.eu/microservice-shopify
+     */
+    call(resource: string, method: string, params: any, callback: (error?: any, data?: any) => void): any;
+}
+declare class ShopifyClient extends Api {
     firebase: any;
     ready: boolean;
-    constructor(config: IShopifyClientConfig);
+    constructor(config: IShopifyClientConfig, apiBaseUrl: string);
     /**
      * Identify if a webpage is being loaded inside an iframe or directly into the browser window
      * @see http://stackoverflow.com/a/326076
@@ -54,5 +88,13 @@ declare class ShopifyClient {
      */
     signIn(shopName: string, callback: (error?: any, data?: any) => void): void;
     singOut(accessToken: string, callback: (error?: any, data?: any) => void): any;
-    api(resource: string, method: string, params: Object, callback: (error?: any, data?: any) => void): any;
+    /**
+     * API calls are based on tthis bindings: https://github.com/MONEI/Shopify-api-node
+     */
+    api(resource: string, method: string, params: any, callback: (error?: any, data?: any) => void): any;
+}
+declare class VideoAPI extends Api {
+    config: IShopifyClientConfig;
+    constructor(config: IShopifyClientConfig, apiBaseUrl: string, callback: any);
+    api(resource: any, method: any, params: any, callback: any): any;
 }
