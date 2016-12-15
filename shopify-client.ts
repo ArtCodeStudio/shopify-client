@@ -47,7 +47,7 @@ class Api {
      * API calls are based on tthis bindings: https://github.com/MONEI/Shopify-api-node
      * But wrapped with or own microserive: https://git.mediamor.de/jumplink.eu/microservice-shopify
      */
-    call (resource: string, method: string, params: any, callback: (error?: any, data?: any) => void ): any {
+    call (resource: string, method: string, params: any, callback: (error?: any, data?: any) => void ): void {
         let query = $.param(params);
 
         if (query.length > 0) {
@@ -55,10 +55,14 @@ class Api {
         }
 
         let url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopifyApp.shopName}/${resource}/${method}?callback=?${query}`;
-        console.log('ShopifyClient.api request:', url);
-        return $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
+        // console.log('ShopifyClient.api request:', url);
+        let jqxhr = $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
             console.log('ShopifyClient.api result:', data);
             return callback(null, data);
+        });
+        
+        jqxhr.fail((xhr: JQueryXHR, textStatus: string, errorThrown: string) => {
+            return callback(textStatus);
         });
     };
 }
@@ -208,14 +212,17 @@ class ShopifyClient extends Api {
     };
 
     initApi (shopName: string, firebaseIdToken: string, cb: (error: any, data?: any) => void ): void {
-        let thisObj = this;
+        let self = this;
         // console.log('initApi', shopName, firebaseIdToken);
         let url = `${this.apiBaseUrl}/init/${this.config.appName}/${shopName}/${firebaseIdToken}?callback=?`;
-        $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
+        let jqxhr = $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
             // console.log('greate you are signed in. shop:', data);  
-            // TODO check error
-            thisObj.ready = true; // TODO use event?
+            self.ready = true; // TODO use event?
             cb(null, data);
+        });
+
+        jqxhr.fail((xhr: JQueryXHR, textStatus: string, errorThrown: string) => {
+            return cb(textStatus);
         });
     };
 
@@ -228,29 +235,29 @@ class ShopifyClient extends Api {
         // console.log('signIn');
 
         this.initFirebase();
-        let thisObj = this;
+        let self = this;
 
         let url = `${this.config.shopifyApp.microserviceAuthBaseUrl}/token/${this.config.appName}/${shopName}?callback=?`;
         $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
 
             if (data.status === 404) {
                 console.error('token not found', data );
-                thisObj.getAccess(shopName);
+                self.getAccess(shopName);
             } else if (typeof(data.firebaseToken) === 'string') {
 
                 console.log('microservice-auth result', data );
 
-                thisObj.config.firebase.customToken = data.firebaseToken;
+                self.config.firebase.customToken = data.firebaseToken;
                 // this.config.firebase.uid = data.firebaseUid; not needed 
 
-                thisObj.firebase.auth().signInWithCustomToken(data.firebaseToken).then(function (user) {
-                    thisObj.config.firebase.user = user;
+                self.firebase.auth().signInWithCustomToken(data.firebaseToken).then(function (user) {
+                    self.config.firebase.user = user;
                     // console.log('firebase user', user);
                     user.getToken(/* forceRefresh */ true).then(function(firebaseIdToken) {
                         // console.log('firebaseIdToken', firebaseIdToken);
-                        thisObj.config.firebase.idToken = firebaseIdToken;
+                        self.config.firebase.idToken = firebaseIdToken;
                         // Send token to your backend via HTTPS
-                        thisObj.initApi(shopName, firebaseIdToken, callback);
+                        self.initApi(shopName, firebaseIdToken, callback);
 
                     }).catch(function(error) {
                         // Handle error
@@ -268,21 +275,24 @@ class ShopifyClient extends Api {
         });
     };
 
-    singOut (accessToken: string, callback: (error?: any, data?: any) => void ): any {
+    singOut (accessToken: string, callback: (error?: any, data?: any) => void ): void {
         let url = `${this.apiBaseUrl}/signout/${this.config.appName}/${this.config.shopifyApp.shopName}?callback=?`;
-        $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
-            console.log('you are signed out:', data);
+        let jqxhr = $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
+            // console.log('you are signed out:', data);
+            return callback(null, data);
+        });
+
+        jqxhr.fail((xhr: JQueryXHR, textStatus: string, errorThrown: string) => {
+            return callback(textStatus);
         });
     };
 
     /**
      * API calls are based on tthis bindings: https://github.com/MONEI/Shopify-api-node
      */
-    api (resource: string, method: string, params: any, callback: (error?: any, data?: any) => void ): any {
-
-        console.log('ShopifyClient.api request:', resource, method, params);
-
-        return this.call(resource, method, params, callback);
+    api (resource: string, method: string, params: any, callback: (error?: any, data?: any) => void ): void {
+        // console.log('ShopifyClient.api request:', resource, method, params);
+        this.call(resource, method, params, callback);
     };
 }
 
@@ -297,10 +307,15 @@ class VideoAPI extends Api {
 
         let url = `${this.apiBaseUrl}/init/${this.config.appName}/${this.config.shopifyApp.shopName}/${this.config.firebase.idToken}?callback=?`;
 
-        $.getJSON( url, function( res ) {
-            console.log('greate you are signed in to the microservice-video:', res);
-            callback(null, res);
+        let jqxhr = $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
+            console.log('ShopifyClient.api result:', data);
+            return callback(null, data);
         });
+
+        jqxhr.fail((xhr: JQueryXHR, textStatus: string, errorThrown: string) => {
+            return callback(textStatus);
+        });
+
     }
 
     // MARC: Beispiel, bitte anpassen

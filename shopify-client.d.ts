@@ -34,7 +34,7 @@ declare class Api {
      * API calls are based on tthis bindings: https://github.com/MONEI/Shopify-api-node
      * But wrapped with or own microserive: https://git.mediamor.de/jumplink.eu/microservice-shopify
      */
-    call(resource: string, method: string, params: any, callback: (error?: any, data?: any) => void): any;
+    call(resource: string, method: string, params: any, callback: (error?: any, data?: any) => void): void;
 }
 declare class ShopifyClient extends Api {
     firebase: any;
@@ -87,11 +87,11 @@ declare class ShopifyClient extends Api {
      *
      */
     signIn(shopName: string, callback: (error?: any, data?: any) => void): void;
-    singOut(accessToken: string, callback: (error?: any, data?: any) => void): any;
+    singOut(accessToken: string, callback: (error?: any, data?: any) => void): void;
     /**
      * API calls are based on tthis bindings: https://github.com/MONEI/Shopify-api-node
      */
-    api(resource: string, method: string, params: any, callback: (error?: any, data?: any) => void): any;
+    api(resource: string, method: string, params: any, callback: (error?: any, data?: any) => void): void;
 }
 declare class VideoAPI extends Api {
     config: IShopifyClientConfig;
