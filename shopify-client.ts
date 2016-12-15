@@ -56,12 +56,13 @@ class Api {
 
         let url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopifyApp.shopName}/${resource}/${method}?callback=?${query}`;
         // console.log('ShopifyClient.api request:', url);
-        let jqxhr = $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
+        let jqxhr = $.getJSON( url)
+        .done(function(data: JQueryXHR, textStatus: string, errorThrown: string) {
             console.log('ShopifyClient.api result:', data);
             return callback(null, data);
-        });
-        
-        jqxhr.fail((xhr: JQueryXHR, textStatus: string, errorThrown: string) => {
+        })
+        .fail((data: JQueryXHR, textStatus: string, errorThrown: string) => {
+            console.error(data, textStatus, errorThrown);
             return callback(textStatus);
         });
     };

@@ -24,11 +24,13 @@ var Api = (function () {
         }
         var url = this.apiBaseUrl + "/api/" + this.config.appName + "/" + this.config.shopifyApp.shopName + "/" + resource + "/" + method + "?callback=?" + query;
         // console.log('ShopifyClient.api request:', url);
-        var jqxhr = $.getJSON(url, function (data, textStatus, jqXHR) {
+        var jqxhr = $.getJSON(url)
+            .done(function (data, textStatus, errorThrown) {
             console.log('ShopifyClient.api result:', data);
             return callback(null, data);
-        });
-        jqxhr.fail(function (xhr, textStatus, errorThrown) {
+        })
+            .fail(function (data, textStatus, errorThrown) {
+            console.error(data, textStatus, errorThrown);
             return callback(textStatus);
         });
     };
