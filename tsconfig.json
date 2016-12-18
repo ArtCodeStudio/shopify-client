@@ -2,8 +2,7 @@
     "compilerOptions": {
         "sourceMap": true,
         "declaration": true,
-        "target": "es5",
-        "module": "none"
+        "target": "es5"
     },
     "files": [
         "shopify-client.ts"

@@ -1,13 +1,36 @@
 /// <reference path='node_modules/@types/jquery/index.d.ts' />
 /// <reference path='node_modules/@types/underscore/index.d.ts' />
 /// <reference path='node_modules/@types/es6-promise/index.d.ts' />
+"use strict";
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-/// <reference path='shopifyEASDK.d.ts' />
-/// <reference path='firebase.d.ts' />
+var ShopifyClientConfigFirebase = (function (_super) {
+    __extends(ShopifyClientConfigFirebase, _super);
+    function ShopifyClientConfigFirebase() {
+        return _super.apply(this, arguments) || this;
+    }
+    return ShopifyClientConfigFirebase;
+}(Object));
+exports.ShopifyClientConfigFirebase = ShopifyClientConfigFirebase;
+var ShopifyClientConfigShopify = (function (_super) {
+    __extends(ShopifyClientConfigShopify, _super);
+    function ShopifyClientConfigShopify() {
+        return _super.apply(this, arguments) || this;
+    }
+    return ShopifyClientConfigShopify;
+}(Object));
+exports.ShopifyClientConfigShopify = ShopifyClientConfigShopify;
+var ShopifyClientConfig = (function (_super) {
+    __extends(ShopifyClientConfig, _super);
+    function ShopifyClientConfig() {
+        return _super.apply(this, arguments) || this;
+    }
+    return ShopifyClientConfig;
+}(Object));
+exports.ShopifyClientConfig = ShopifyClientConfig;
 var Api = (function () {
     function Api(config, apiBaseUrl) {
         this.config = config;
@@ -22,7 +45,7 @@ var Api = (function () {
         if (query.length > 0) {
             query = '&' + query;
         }
-        var url = this.apiBaseUrl + "/api/" + this.config.appName + "/" + this.config.shopifyApp.shopName + "/" + resource + "/" + method + "?callback=?" + query;
+        var url = this.apiBaseUrl + "/api/" + this.config.appName + "/" + this.config.shopify.shopName + "/" + resource + "/" + method + "?callback=?" + query;
         // console.log('ShopifyClient.api request:', url);
         var jqxhr = $.getJSON(url)
             .done(function (data, textStatus, errorThrown) {
@@ -37,6 +60,7 @@ var Api = (function () {
     ;
     return Api;
 }());
+exports.Api = Api;
 var ShopifyClient = (function (_super) {
     __extends(ShopifyClient, _super);
     function ShopifyClient(config, apiBaseUrl) {
@@ -57,6 +81,12 @@ var ShopifyClient = (function (_super) {
         }
     };
     /**
+     * Chjeck if SDK is ready
+     */
+    ShopifyClient.prototype.isReady = function () {
+        return this.ready;
+    };
+    /**
      * Get the values from URL GET parameters
      *
      * @see http://stackoverflow.com/a/1099670
@@ -71,21 +101,21 @@ var ShopifyClient = (function (_super) {
     };
     ShopifyClient.prototype.initEmbeddedSDK = function (protocol, shop, callback) {
         var initSDKConfig = {
-            apiKey: this.config.shopifyApp.apiKey,
+            apiKey: this.config.shopify.apiKey,
             shopOrigin: protocol + shop,
             debug: this.config.debug
         };
-        var thisObj = this;
+        var self = this;
         // console.log('init Embedded SDK with config', initSDKConfig);
         ShopifyApp.init(initSDKConfig);
         // should be ready after success auth
         ShopifyApp.ready(function () {
             // console.log('READY YEA!');
-            thisObj.signIn(thisObj.config.shopifyApp.shopName, function (error, initApiRes) {
+            self.signIn(self.config.shopify.shopName, function (error, initApiRes) {
                 if (error) {
                     callback(error, initApiRes);
                     console.error(new Error(error));
-                    return thisObj.getAccess(thisObj.config.shopifyApp.shopName);
+                    return self.getAccess(self.config.shopify.shopName);
                 }
                 callback(null, initApiRes);
             });
@@ -127,21 +157,21 @@ var ShopifyClient = (function (_super) {
     };
     ;
     /**
-     * Set the shop domain and shop name by the shop domain in this.config.shopifyApp
+     * Set the shop domain and shop name by the shop domain in this.config.shopify
      */
     ShopifyClient.prototype.setShop = function (shop) {
-        this.config.shopifyApp.shop = shop;
-        this.config.shopifyApp.shopName = this.getShopName(this.config.shopifyApp.shop);
-        // console.log('setShop', shop, this.config.shopifyApp);
+        this.config.shopify.shop = shop;
+        this.config.shopify.shopName = this.getShopName(this.config.shopify.shop);
+        // console.log('setShop', shop, this.config.shopify);
     };
     ;
     /**
-     * Set the shop domain and shop name by the shop name in this.config.shopifyApp
+     * Set the shop domain and shop name by the shop name in this.config.shopify
      */
     ShopifyClient.prototype.setShopName = function (shopName) {
-        this.config.shopifyApp.shop = this.getShop(shopName);
-        this.config.shopifyApp.shopName = shopName;
-        // console.log('setShopName', shopName, this.config.shopifyApp);
+        this.config.shopify.shop = this.getShop(shopName);
+        this.config.shopify.shopName = shopName;
+        // console.log('setShopName', shopName, this.config.shopify);
     };
     ;
     /**
@@ -150,7 +180,7 @@ var ShopifyClient = (function (_super) {
      */
     ShopifyClient.prototype.getAccess = function (shopName) {
         // console.log('getAccess', shopName);
-        var accessRedirectUrl = this.config.shopifyApp.microserviceAuthBaseUrl + "/redirect/" + this.config.appName + "/" + shopName;
+        var accessRedirectUrl = this.config.shopify.microserviceAuthBaseUrl + "/redirect/" + this.config.appName + "/" + shopName;
         // if in iframe redirect parent site
         if (this.inIframe()) {
             window.top.location.href = accessRedirectUrl;
@@ -183,7 +213,7 @@ var ShopifyClient = (function (_super) {
         // console.log('signIn');
         this.initFirebase();
         var self = this;
-        var url = this.config.shopifyApp.microserviceAuthBaseUrl + "/token/" + this.config.appName + "/" + shopName + "?callback=?";
+        var url = this.config.shopify.microserviceAuthBaseUrl + "/token/" + this.config.appName + "/" + shopName + "?callback=?";
         $.getJSON(url, function (data, textStatus, jqXHR) {
             if (data.status === 404) {
                 console.error('token not found', data);
@@ -217,7 +247,7 @@ var ShopifyClient = (function (_super) {
     };
     ;
     ShopifyClient.prototype.singOut = function (accessToken, callback) {
-        var url = this.apiBaseUrl + "/signout/" + this.config.appName + "/" + this.config.shopifyApp.shopName + "?callback=?";
+        var url = this.apiBaseUrl + "/signout/" + this.config.appName + "/" + this.config.shopify.shopName + "?callback=?";
         var jqxhr = $.getJSON(url, function (data, textStatus, jqXHR) {
             // console.log('you are signed out:', data);
             return callback(null, data);
@@ -231,19 +261,32 @@ var ShopifyClient = (function (_super) {
      * API calls are based on tthis bindings: https://github.com/MONEI/Shopify-api-node
      */
     ShopifyClient.prototype.api = function (resource, method, params, callback) {
-        // console.log('ShopifyClient.api request:', resource, method, params);
-        this.call(resource, method, params, callback);
+        var self = this;
+        if (self.ready) {
+            console.warn('api: ', resource, method);
+            self.call(resource, method, params, callback);
+            return;
+        }
+        else {
+            console.warn(new Error('api not ready, try again..'));
+            // WORKAROUND need better Solution
+            setTimeout(function () {
+                self.api(resource, method, params, callback);
+                return;
+            }, 3000);
+        }
     };
     ;
     return ShopifyClient;
 }(Api));
+exports.ShopifyClient = ShopifyClient;
 var VideoAPI = (function (_super) {
     __extends(VideoAPI, _super);
     function VideoAPI(config, apiBaseUrl, callback) {
         var _this = _super.call(this, config, apiBaseUrl) || this;
         // this.config = config;
         console.log('VideoAPI.constructor', _this.config);
-        var url = _this.apiBaseUrl + "/init/" + _this.config.appName + "/" + _this.config.shopifyApp.shopName + "/" + _this.config.firebase.idToken + "?callback=?";
+        var url = _this.apiBaseUrl + "/init/" + _this.config.appName + "/" + _this.config.shopify.shopName + "/" + _this.config.firebase.idToken + "?callback=?";
         var jqxhr = $.getJSON(url, function (data, textStatus, jqXHR) {
             console.log('ShopifyClient.api result:', data);
             return callback(null, data);
@@ -261,4 +304,5 @@ var VideoAPI = (function (_super) {
     ;
     return VideoAPI;
 }(Api));
+exports.VideoAPI = VideoAPI;
 //# sourceMappingURL=shopify-client.js.map

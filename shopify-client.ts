@@ -2,22 +2,25 @@
 /// <reference path='node_modules/@types/underscore/index.d.ts' />
 /// <reference path='node_modules/@types/es6-promise/index.d.ts' />
 
-/// <reference path='shopifyEASDK.d.ts' />
 /// <reference path='firebase.d.ts' />
 
-declare interface IShopifyClientConfigFirebase extends Object {
-    apiKey: string,
-    authDomain: string,
-    databaseURL: string,
-    storageBucket: string,
+import { shopify } from './shopifyEASDK';
+
+declare let ShopifyApp: shopify.EASDK;
+
+export class ShopifyClientConfigFirebase extends Object {
+    apiKey: string;
+    authDomain: string;
+    databaseURL: string;
+    storageBucket: string;
     messagingSenderId?: string;
 
     customToken?: string;
-    idToken?: string;
+    idToken?: string;   
     user?: any; // TODO firebase user Object and move to class
 }
 
-declare interface IShopifyClientConfigShopify extends Object {
+export class ShopifyClientConfigShopify extends Object {
     apiKey: string;
     microserviceAuthBaseUrl: string;
     protocol: string;
@@ -25,20 +28,20 @@ declare interface IShopifyClientConfigShopify extends Object {
     shopName: string;
 }
 
-declare interface IShopifyClientConfig extends Object {
+export class ShopifyClientConfig extends Object {
     appName: string;
-    firebase: IShopifyClientConfigFirebase;
-    shopifyApp: IShopifyClientConfigShopify;
+    firebase: ShopifyClientConfigFirebase;
+    shopify: ShopifyClientConfigShopify;
     debug: boolean;
 }
 
-class Api {
+export class Api {
 
-    config: IShopifyClientConfig;
+    config: ShopifyClientConfig;
 
     apiBaseUrl: string;
 
-    constructor(config: IShopifyClientConfig, apiBaseUrl: string) {
+    constructor(config: ShopifyClientConfig, apiBaseUrl: string) {
         this.config = config;
         this.apiBaseUrl = apiBaseUrl;
     }
@@ -54,7 +57,7 @@ class Api {
             query = '&' + query;
         }
 
-        let url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopifyApp.shopName}/${resource}/${method}?callback=?${query}`;
+        let url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/${resource}/${method}?callback=?${query}`;
         // console.log('ShopifyClient.api request:', url);
         let jqxhr = $.getJSON( url)
         .done(function(data: JQueryXHR, textStatus: string, errorThrown: string) {
@@ -68,13 +71,13 @@ class Api {
     };
 }
 
-class ShopifyClient extends Api {
+export class ShopifyClient extends Api {
 
-    public firebase: any; // firebase.app.App
+    public firebase: firebase.app.App;
 
     public ready: boolean = false;
 
-    constructor(config: IShopifyClientConfig, apiBaseUrl: string) {
+    constructor(config: ShopifyClientConfig, apiBaseUrl: string) {
         super(config, apiBaseUrl);
     }
 
@@ -91,11 +94,18 @@ class ShopifyClient extends Api {
     }
 
     /**
+     * Chjeck if SDK is ready
+     */
+    isReady(): boolean {
+        return this.ready;
+    }
+
+    /**
      * Get the values from URL GET parameters
      * 
      * @see http://stackoverflow.com/a/1099670
      */
-    getQueryParams(qs: string): Object {
+    getQueryParams(qs: string): any {
         qs = qs.split('+').join(' ');
 
         let params = {},
@@ -111,12 +121,12 @@ class ShopifyClient extends Api {
 
     initEmbeddedSDK(protocol: string, shop: string, callback: (error?: any, data?: any) => void): any {
         let initSDKConfig = {
-            apiKey: this.config.shopifyApp.apiKey,
+            apiKey: this.config.shopify.apiKey,
             shopOrigin: protocol + shop,
             debug: this.config.debug
         };
 
-        let thisObj = this;
+        let self = this;
 
         // console.log('init Embedded SDK with config', initSDKConfig);
 
@@ -126,11 +136,11 @@ class ShopifyClient extends Api {
         ShopifyApp.ready(function () {
             // console.log('READY YEA!');
 
-            thisObj.signIn(thisObj.config.shopifyApp.shopName, function(error, initApiRes) {
+            self.signIn(self.config.shopify.shopName, function(error, initApiRes) {
                 if(error) {
                     callback(error, initApiRes);
                     console.error(new Error(error));
-                    return thisObj.getAccess(thisObj.config.shopifyApp.shopName);
+                    return self.getAccess(self.config.shopify.shopName);
                 }
                 callback(null, initApiRes);
 
@@ -179,21 +189,21 @@ class ShopifyClient extends Api {
 
 
     /**
-     * Set the shop domain and shop name by the shop domain in this.config.shopifyApp
+     * Set the shop domain and shop name by the shop domain in this.config.shopify
      */
     setShop (shop: string): void {
-        this.config.shopifyApp.shop = shop;
-        this.config.shopifyApp.shopName = this.getShopName(this.config.shopifyApp.shop);
-        // console.log('setShop', shop, this.config.shopifyApp);
+        this.config.shopify.shop = shop;
+        this.config.shopify.shopName = this.getShopName(this.config.shopify.shop);
+        // console.log('setShop', shop, this.config.shopify);
     };
 
     /**
-     * Set the shop domain and shop name by the shop name in this.config.shopifyApp
+     * Set the shop domain and shop name by the shop name in this.config.shopify
      */
     setShopName (shopName: string): void {
-        this.config.shopifyApp.shop = this.getShop(shopName);
-        this.config.shopifyApp.shopName = shopName;
-        // console.log('setShopName', shopName, this.config.shopifyApp);
+        this.config.shopify.shop = this.getShop(shopName);
+        this.config.shopify.shopName = shopName;
+        // console.log('setShopName', shopName, this.config.shopify);
     };
 
     /**
@@ -202,7 +212,7 @@ class ShopifyClient extends Api {
      */
     getAccess (shopName: string): void {
         // console.log('getAccess', shopName);
-        let accessRedirectUrl = `${this.config.shopifyApp.microserviceAuthBaseUrl}/redirect/${this.config.appName}/${shopName}`;
+        let accessRedirectUrl = `${this.config.shopify.microserviceAuthBaseUrl}/redirect/${this.config.appName}/${shopName}`;
 
         // if in iframe redirect parent site
         if (this.inIframe()) {
@@ -238,7 +248,7 @@ class ShopifyClient extends Api {
         this.initFirebase();
         let self = this;
 
-        let url = `${this.config.shopifyApp.microserviceAuthBaseUrl}/token/${this.config.appName}/${shopName}?callback=?`;
+        let url = `${this.config.shopify.microserviceAuthBaseUrl}/token/${this.config.appName}/${shopName}?callback=?`;
         $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
 
             if (data.status === 404) {
@@ -277,7 +287,7 @@ class ShopifyClient extends Api {
     };
 
     singOut (accessToken: string, callback: (error?: any, data?: any) => void ): void {
-        let url = `${this.apiBaseUrl}/signout/${this.config.appName}/${this.config.shopifyApp.shopName}?callback=?`;
+        let url = `${this.apiBaseUrl}/signout/${this.config.appName}/${this.config.shopify.shopName}?callback=?`;
         let jqxhr = $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
             // console.log('you are signed out:', data);
             return callback(null, data);
@@ -292,21 +302,33 @@ class ShopifyClient extends Api {
      * API calls are based on tthis bindings: https://github.com/MONEI/Shopify-api-node
      */
     api (resource: string, method: string, params: any, callback: (error?: any, data?: any) => void ): void {
-        // console.log('ShopifyClient.api request:', resource, method, params);
-        this.call(resource, method, params, callback);
+        let self = this;
+        if (self.ready) {
+            console.warn('api: ', resource, method);
+            self.call(resource, method, params, callback);
+            return;
+        } else {
+            console.warn(new Error('api not ready, try again..'));
+            // WORKAROUND need better Solution
+            setTimeout(() => {
+                self.api(resource, method, params, callback);
+                return;
+            }, 3000);
+        }
+
     };
 }
 
-class VideoAPI extends Api {
+export class VideoAPI extends Api {
 
-    public config: IShopifyClientConfig;
+    public config: ShopifyClientConfig;
 
-    constructor(config: IShopifyClientConfig, apiBaseUrl: string, callback) {
+    constructor(config: ShopifyClientConfig, apiBaseUrl: string, callback) {
         super(config, apiBaseUrl);
         // this.config = config;
         console.log('VideoAPI.constructor', this.config);
 
-        let url = `${this.apiBaseUrl}/init/${this.config.appName}/${this.config.shopifyApp.shopName}/${this.config.firebase.idToken}?callback=?`;
+        let url = `${this.apiBaseUrl}/init/${this.config.appName}/${this.config.shopify.shopName}/${this.config.firebase.idToken}?callback=?`;
 
         let jqxhr = $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
             console.log('ShopifyClient.api result:', data);

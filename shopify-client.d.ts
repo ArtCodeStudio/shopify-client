@@ -1,9 +1,8 @@
 /// <reference path="node_modules/@types/jquery/index.d.ts" />
 /// <reference path="node_modules/@types/underscore/index.d.ts" />
 /// <reference path="node_modules/@types/es6-promise/index.d.ts" />
-/// <reference path="shopifyEASDK.d.ts" />
 /// <reference path="firebase.d.ts" />
-interface IShopifyClientConfigFirebase extends Object {
+export declare class ShopifyClientConfigFirebase extends Object {
     apiKey: string;
     authDomain: string;
     databaseURL: string;
@@ -13,44 +12,48 @@ interface IShopifyClientConfigFirebase extends Object {
     idToken?: string;
     user?: any;
 }
-interface IShopifyClientConfigShopify extends Object {
+export declare class ShopifyClientConfigShopify extends Object {
     apiKey: string;
     microserviceAuthBaseUrl: string;
     protocol: string;
     shop: string;
     shopName: string;
 }
-interface IShopifyClientConfig extends Object {
+export declare class ShopifyClientConfig extends Object {
     appName: string;
-    firebase: IShopifyClientConfigFirebase;
-    shopifyApp: IShopifyClientConfigShopify;
+    firebase: ShopifyClientConfigFirebase;
+    shopify: ShopifyClientConfigShopify;
     debug: boolean;
 }
-declare class Api {
-    config: IShopifyClientConfig;
+export declare class Api {
+    config: ShopifyClientConfig;
     apiBaseUrl: string;
-    constructor(config: IShopifyClientConfig, apiBaseUrl: string);
+    constructor(config: ShopifyClientConfig, apiBaseUrl: string);
     /**
      * API calls are based on tthis bindings: https://github.com/MONEI/Shopify-api-node
      * But wrapped with or own microserive: https://git.mediamor.de/jumplink.eu/microservice-shopify
      */
     call(resource: string, method: string, params: any, callback: (error?: any, data?: any) => void): void;
 }
-declare class ShopifyClient extends Api {
-    firebase: any;
+export declare class ShopifyClient extends Api {
+    firebase: firebase.app.App;
     ready: boolean;
-    constructor(config: IShopifyClientConfig, apiBaseUrl: string);
+    constructor(config: ShopifyClientConfig, apiBaseUrl: string);
     /**
      * Identify if a webpage is being loaded inside an iframe or directly into the browser window
      * @see http://stackoverflow.com/a/326076
      */
     inIframe(): boolean;
     /**
+     * Chjeck if SDK is ready
+     */
+    isReady(): boolean;
+    /**
      * Get the values from URL GET parameters
      *
      * @see http://stackoverflow.com/a/1099670
      */
-    getQueryParams(qs: string): Object;
+    getQueryParams(qs: string): any;
     initEmbeddedSDK(protocol: string, shop: string, callback: (error?: any, data?: any) => void): any;
     /**
      * Init Shopify Embedded App SDK or redirect to the Shopify App Admin Page
@@ -68,11 +71,11 @@ declare class ShopifyClient extends Api {
      */
     getShop(shopName: string): string;
     /**
-     * Set the shop domain and shop name by the shop domain in this.config.shopifyApp
+     * Set the shop domain and shop name by the shop domain in this.config.shopify
      */
     setShop(shop: string): void;
     /**
-     * Set the shop domain and shop name by the shop name in this.config.shopifyApp
+     * Set the shop domain and shop name by the shop name in this.config.shopify
      */
     setShopName(shopName: string): void;
     /**
@@ -93,8 +96,8 @@ declare class ShopifyClient extends Api {
      */
     api(resource: string, method: string, params: any, callback: (error?: any, data?: any) => void): void;
 }
-declare class VideoAPI extends Api {
-    config: IShopifyClientConfig;
-    constructor(config: IShopifyClientConfig, apiBaseUrl: string, callback: any);
+export declare class VideoAPI extends Api {
+    config: ShopifyClientConfig;
+    constructor(config: ShopifyClientConfig, apiBaseUrl: string, callback: any);
     api(resource: any, method: any, params: any, callback: any): any;
 }
