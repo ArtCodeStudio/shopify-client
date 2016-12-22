@@ -2,9 +2,11 @@
 /// <reference path='node_modules/@types/underscore/index.d.ts' />
 /// <reference path='node_modules/@types/es6-promise/index.d.ts' />
 
+// /// <reference path='assets/vendor/firebase/firebase.d.ts' />
 /// <reference path='firebase.d.ts' />
 
 import { shopify } from './shopifyEASDK';
+import { Inject } from '@angular/core';
 
 declare let ShopifyApp: shopify.EASDK;
 
@@ -16,7 +18,7 @@ export class ShopifyClientConfigFirebase extends Object {
     messagingSenderId?: string;
 
     customToken?: string;
-    idToken?: string;   
+    idToken?: string;
     user?: any; // TODO firebase user Object and move to class
 }
 
@@ -58,10 +60,10 @@ export class Api {
         }
 
         let url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/${resource}/${method}?callback=?${query}`;
-        // console.log('ShopifyClient.api request:', url);
+        console.log('Api.call request:', url);
         let jqxhr = $.getJSON( url)
         .done(function(data: JQueryXHR, textStatus: string, errorThrown: string) {
-            console.log('ShopifyClient.api result:', data);
+            console.log('Api.call result:', data);
             return callback(null, data);
         })
         .fail((data: JQueryXHR, textStatus: string, errorThrown: string) => {
@@ -76,6 +78,13 @@ export class ShopifyClient extends Api {
     public firebase: firebase.app.App;
 
     public ready: boolean = false;
+
+    /**
+     * Cache api results
+    */
+    cache: any = {
+        listAllProduct: {}
+    };
 
     constructor(config: ShopifyClientConfig, apiBaseUrl: string) {
         super(config, apiBaseUrl);
@@ -317,11 +326,43 @@ export class ShopifyClient extends Api {
         }
 
     };
+
+    listMetafieldByProduct(productId, callback: (error?: any, data?: any) => void) {
+        let self = this;
+        self.api('metafield', 'list', {
+            metafield: {
+                owner_resource: 'product',
+                owner_id: productId
+            }
+        }, ( err , productMetafields) => {
+            if (err) {
+                return callback(err);
+            }
+            return callback(null, productMetafields);
+        });
+    }
+
+    listAllProduct(cache, fields, callback: (error?: any, data?: any) => void) {
+        console.log('listAllProduct', cache, fields);
+        let self = this;
+        if (cache && self.cache && self.cache.listAllProduct && self.cache.listAllProduct[fields]) {
+            return callback(null, self.cache.listAllProduct[fields]);
+        }
+        self.api('product', 'listAll', {fields: fields}, (error, data) => {
+            if (!error && cache) {
+                self.cache.listAllProduct[fields] = data;
+            }
+            callback(error, data);
+        });
+    }
+
+
 }
 
 export class VideoAPI extends Api {
 
-    public config: ShopifyClientConfig;
+   // public config: ShopifyClientConfig;
+    //private _firebase;
 
     constructor(config: ShopifyClientConfig, apiBaseUrl: string, callback) {
         super(config, apiBaseUrl);
@@ -339,13 +380,73 @@ export class VideoAPI extends Api {
             return callback(textStatus);
         });
 
+        // this.initFirebase();
+
     }
 
-    // MARC: Beispiel, bitte anpassen
+    initFirebase() {
+        console.info('VideoAPI initFirebase');
+        // return this._firebase = firebase.initializeApp( this.config.firebase );
+        // console.info('VideoAPI firebase?', this.firebase )
+    }
+
+    /**
+     * 
+     * 
+     */
     api(resource, method, params, callback): any {
 
         console.log('VideoAPI.api request:', resource, method, params);
+        console.info('VideoAPI.api.config', this.config );
+        return this.call(resource, method, params, callback);
+    };
 
+    /**
+     * 
+     *  target url: api/:appName/:shopName/thumbnail/delete 
+     */
+    public createThumbnail( dataURL: string, shopName: string, productID: string ) {
+        return new Promise( ( resolve, reject ) => {
+
+            console.info('VideoAPI.api.config', this.config );
+
+            // let firebase =  shopifyClient.firebase;
+
+            // let storageRef = firebase.storage().ref().child( shopName + '/' + productID + '/poster.png' );
+
+            resolve('OK');
+                // storageRef.put(file).then( (snapshot) => {
+                //     console.log('Uploaded a blob or file!',snapshot)
+                //     console.log(snapshot.a.downloadURLs[0])
+
+                // })
+
+            // let resource = 'thumbnail';
+            // let method = 'create';
+            // let params = {
+            //     currentTime: currentTime,
+            //     videoName: videoName
+            // };
+
+            // this.call( resource, method, params, () => {
+            //     resolve();
+            // });
+
+            // console.info('result: ', result);
+            // const el = this.elementRef.nativeElement.cloneNode(true);
+        });
+    };
+
+    /**
+     * 
+     */
+    public deleteThumbnail(params, callback): any {
+        let resource = 'thumbnail';
+        let method = 'delete';
+
+
+        console.log('VideoAPI.api request:', resource, method, params);
+        console.info('VideoAPI.api.config', this.config );
         return this.call(resource, method, params, callback);
     };
 }

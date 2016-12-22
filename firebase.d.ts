@@ -124,6 +124,7 @@ declare namespace firebase.app {
     name: string;
     options: Object;
     storage(): firebase.storage.Storage;
+    messaging(): any; // By Pascal Garber 21.12.16
   }
 }
 declare namespace firebase {
@@ -340,7 +341,8 @@ declare namespace firebase.storage {
     getMetadata(): Promise<firebase.storage.FullMetadata>;
     name: string;
     parent: firebase.storage.Reference;
-    put(blob: Blob, metadata?: firebase.storage.UploadMetadata): firebase.storage.UploadTask;
+    // put(blob: Blob, metadata?: firebase.storage.UploadMetadata): firebase.storage.UploadTask;
+    put(blob: Blob, metadata?: firebase.storage.UploadMetadata):Promise<any>; // proper type missing?
     root: firebase.storage.Reference;
     storage: firebase.storage.Storage;
     toString(): string;
