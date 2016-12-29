@@ -46,7 +46,7 @@ export declare namespace shopify {
         /**
          * When the button is clicked, this function will be executed in the app. Params are (message, data).
          */
-        callback?: () => void;
+        callback?: (message: string, data: any) => void;
         /**
          * The URL to be opened.
          * It should be absolute for app links or external links.
@@ -69,25 +69,25 @@ export declare namespace shopify {
          * 'new' defaults to false, but target: 'app' defaults to true).
          * It is always safe and prudent to override this value to be exactly what you require for your specific application.
          */
-        loading: boolean;
+        loading?: boolean;
         /**
          * Optional color styling for the button. It will always be a sane default,
          * but can accept danger and disabled. If this is not set,
          * primary buttons appear blue and secondary and tertiary buttons are white.
          */
-        style: string;
+        style?: string;
         /**
          * Sets the button to become a dropdown button.
          * Should be used alongside the links attribute.
          * Current accepted value is dropdown.
          * Only valid for secondary top bar buttons.
          */
-        type: string;
+        type?: string;
         /**
          * A list of buttons. Accepts the same attributes as a regular button, like label, target and callback.
          * Only valid for secondary top bar buttons.
          */
-        links: Array<IButtonConfig>;
+        links?: Array<IButtonConfig>;
     }
     interface IButtonsConfig {
         primary?: IButtonConfig;

@@ -3,7 +3,9 @@
         "sourceMap": true,
         "declaration": true,
         "target": "es5",
-        "experimentalDecorators": true
+        "module": "none",
+        "experimentalDecorators": true,
+        "outFile": "shopify-client.js"
     },
     "files": [
         "shopify-client.ts"

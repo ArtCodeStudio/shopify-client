@@ -6,7 +6,6 @@
 /// <reference path='firebase.d.ts' />
 
 import { shopify } from './shopifyEASDK';
-import { Inject } from '@angular/core';
 
 declare let ShopifyApp: shopify.EASDK;
 
@@ -24,7 +23,6 @@ export class ShopifyClientConfigFirebase extends Object {
 
 export class ShopifyClientConfigShopify extends Object {
     apiKey: string;
-    microserviceAuthBaseUrl: string;
     protocol: string;
     shop: string;
     shopName: string;
@@ -60,10 +58,10 @@ export class Api {
         }
 
         let url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/${resource}/${method}?callback=?${query}`;
-        console.log('Api.call request:', url);
+        // console.log('Api.call request:', url);
         let jqxhr = $.getJSON( url)
         .done(function(data: JQueryXHR, textStatus: string, errorThrown: string) {
-            console.log('Api.call result:', data);
+            // console.log('Api.call result:', data);
             return callback(null, data);
         })
         .fail((data: JQueryXHR, textStatus: string, errorThrown: string) => {
@@ -78,6 +76,7 @@ export class ShopifyClient extends Api {
     public firebase: firebase.app.App;
 
     public ready: boolean = false;
+    authBaseUrl: string;
 
     /**
      * Cache api results
@@ -86,8 +85,9 @@ export class ShopifyClient extends Api {
         listAllProduct: {}
     };
 
-    constructor(config: ShopifyClientConfig, apiBaseUrl: string) {
+    constructor(config: ShopifyClientConfig, apiBaseUrl: string, authBaseUrl: string) {
         super(config, apiBaseUrl);
+        this.authBaseUrl = authBaseUrl;
     }
 
     /**
@@ -220,8 +220,8 @@ export class ShopifyClient extends Api {
      * 
      */
     getAccess (shopName: string): void {
-        // console.log('getAccess', shopName);
-        let accessRedirectUrl = `${this.config.shopify.microserviceAuthBaseUrl}/redirect/${this.config.appName}/${shopName}`;
+        console.log('getAccess', shopName);
+        let accessRedirectUrl = `${this.authBaseUrl}/redirect/${this.config.appName}/${shopName}`;
 
         // if in iframe redirect parent site
         if (this.inIframe()) {
@@ -257,7 +257,7 @@ export class ShopifyClient extends Api {
         this.initFirebase();
         let self = this;
 
-        let url = `${this.config.shopify.microserviceAuthBaseUrl}/token/${this.config.appName}/${shopName}?callback=?`;
+        let url = `${this.authBaseUrl}/token/${this.config.appName}/${shopName}?callback=?`;
         $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
 
             if (data.status === 404) {
@@ -265,7 +265,7 @@ export class ShopifyClient extends Api {
                 self.getAccess(shopName);
             } else if (typeof(data.firebaseToken) === 'string') {
 
-                console.log('microservice-auth result', data );
+                // console.log('microservice-auth result', data );
 
                 self.config.firebase.customToken = data.firebaseToken;
                 // this.config.firebase.uid = data.firebaseUid; not needed 
@@ -324,8 +324,29 @@ export class ShopifyClient extends Api {
                 return;
             }, 3000);
         }
-
     };
+
+    deleteMetafield(id, callback: (error?: any, data?: any) => void) {
+        let self = this;
+        self.api('metafield', 'delete', id, ( err , result) => {
+            if (err) {
+                return callback(err);
+            }
+            return callback(null, result);
+        });
+    }
+
+    deleteAllMetafield(ids: Array<Number>, callback: (error?: any, data?: any) => void) {
+        let self = this;
+
+        console.log('deleteAllMetafield', ids);
+        self.api('metafield', 'deleteAll', {ids: ids}, ( err , result) => {
+            if (err) {
+                return callback(err);
+            }
+            return callback(null, result);
+        });
+    }
 
     listMetafieldByProduct(productId, callback: (error?: any, data?: any) => void) {
         let self = this;
@@ -343,7 +364,7 @@ export class ShopifyClient extends Api {
     }
 
     listAllProduct(cache, fields, callback: (error?: any, data?: any) => void) {
-        console.log('listAllProduct', cache, fields);
+        // console.log('listAllProduct', cache, fields);
         let self = this;
         if (cache && self.cache && self.cache.listAllProduct && self.cache.listAllProduct[fields]) {
             return callback(null, self.cache.listAllProduct[fields]);
@@ -361,18 +382,18 @@ export class ShopifyClient extends Api {
 
 export class VideoAPI extends Api {
 
-   // public config: ShopifyClientConfig;
-    //private _firebase;
+    // public config: ShopifyClientConfig;
+    // private _firebase;
 
     constructor(config: ShopifyClientConfig, apiBaseUrl: string, callback) {
         super(config, apiBaseUrl);
         // this.config = config;
-        console.log('VideoAPI.constructor', this.config);
+        // console.log('VideoAPI.constructor', this.config);
 
         let url = `${this.apiBaseUrl}/init/${this.config.appName}/${this.config.shopify.shopName}/${this.config.firebase.idToken}?callback=?`;
 
         let jqxhr = $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
-            console.log('ShopifyClient.api result:', data);
+            // console.log('ShopifyClient.api result:', data);
             return callback(null, data);
         });
 
@@ -396,8 +417,8 @@ export class VideoAPI extends Api {
      */
     api(resource, method, params, callback): any {
 
-        console.log('VideoAPI.api request:', resource, method, params);
-        console.info('VideoAPI.api.config', this.config );
+        // console.log('VideoAPI.api request:', resource, method, params);
+        // console.info('VideoAPI.api.config', this.config );
         return this.call(resource, method, params, callback);
     };
 
@@ -408,7 +429,7 @@ export class VideoAPI extends Api {
     public createThumbnail( dataURL: string, shopName: string, productID: string ) {
         return new Promise( ( resolve, reject ) => {
 
-            console.info('VideoAPI.api.config', this.config );
+            // console.info('VideoAPI.api.config', this.config );
 
             // let firebase =  shopifyClient.firebase;
 
@@ -440,13 +461,12 @@ export class VideoAPI extends Api {
     /**
      * 
      */
-    public deleteThumbnail(params, callback): any {
-        let resource = 'thumbnail';
+    public deleteVideo(productID, firebaseIdToken, callback): any {
+        let resource = 'video';
         let method = 'delete';
-
-
-        console.log('VideoAPI.api request:', resource, method, params);
-        console.info('VideoAPI.api.config', this.config );
-        return this.call(resource, method, params, callback);
+        return this.call(resource, method, {
+            productID: productID,
+            firebaseIdToken: firebaseIdToken,
+        }, callback);
     };
 }
