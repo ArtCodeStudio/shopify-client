@@ -82,7 +82,10 @@ export class ShopifyClient extends Api {
      * Cache api results
     */
     cache: any = {
-        listAllProduct: {}
+        listAllProduct: {},
+        listAllCustomer: {},
+        listAllSmartCollection: {},
+        listAllCustomCollection: {},
     };
 
     constructor(config: ShopifyClientConfig, apiBaseUrl: string, authBaseUrl: string) {
@@ -308,7 +311,7 @@ export class ShopifyClient extends Api {
     };
 
     /**
-     * API calls are based on tthis bindings: https://github.com/MONEI/Shopify-api-node
+     * API calls are based on these bindings: https://github.com/MONEI/Shopify-api-node
      */
     api (resource: string, method: string, params: any, callback: (error?: any, data?: any) => void ): void {
         let self = this;
@@ -324,6 +327,21 @@ export class ShopifyClient extends Api {
                 return;
             }, 3000);
         }
+    };
+
+    /**
+     * The same as above wrapped in Promise semantics
+     */
+    apiPromise (resource: string, method: string, params: any ): Promise<any> {
+        let self = this;
+        return new Promise( (resolve : (value) => void, reject: (reason) => void) => {
+            self.api(resource, method, params, (error, data) => {
+                if (error)
+                    reject(error);
+                else
+                    resolve(data);
+            });
+        });
     };
 
     deleteMetafield(id, callback: (error?: any, data?: any) => void) {
@@ -363,6 +381,21 @@ export class ShopifyClient extends Api {
         });
     }
 
+    listMetafieldByCustomer(customerId, callback: (error?: any, data?: any) => void) {
+        let self = this;
+        self.api('metafield', 'list', {
+            metafield: {
+                owner_resource: 'customer',
+                owner_id: customerId
+            }
+        }, ( err , customerMetafields) => {
+            if (err) {
+                return callback(err);
+            }
+            return callback(null, customerMetafields);
+        });
+    }
+
     listAllProduct(cache, fields, callback: (error?: any, data?: any) => void) {
         // console.log('listAllProduct', cache, fields);
         let self = this;
@@ -377,6 +410,50 @@ export class ShopifyClient extends Api {
         });
     }
 
+    listAllCustomer(cache, fields, callback: (error?: any, data?: any) => void) {
+        console.log('listAllCustomer', cache, fields);
+        let self = this;
+        if (cache && self.cache && self.cache.listAllCustomer && self.cache.listAllCustomer[fields]) {
+            return callback(null, self.cache.listAllCustomer[fields]);
+        }
+        self.api('customer', 'listAll', {fields: fields}, (error, data) => {
+            console.log('customer listAll');
+            if (!error && cache) {
+                self.cache.listAllCustomer[fields] = data;
+            }
+            callback(error, data);
+        });
+    }
+
+    listAllSmartCollection(cache, fields, callback: (error?: any, data?: any) => void) {
+        console.log('shopify-client: listAllSmartCollection', cache, fields);
+        let self = this;
+        if (cache && self.cache && self.cache.listAllSmartCollection && self.cache.listAllSmartCollection[fields]) {
+            return callback(null, self.cache.listAllSmartCollection[fields]);
+        }
+        self.api('smartCollection', 'listAll', {fields: fields}, (error, data) => {
+            console.log('api callback: smartCollection listAll');
+            if (!error && cache) {
+                self.cache.listAllSmartCollection[fields] = data;
+            }
+            callback(error, data);
+        });
+    }
+
+    listAllCustomCollection(cache, fields, callback: (error?: any, data?: any) => void) {
+        console.log('shopify-client: listAllCustomCollection', cache, fields);
+        let self = this;
+        if (cache && self.cache && self.cache.listAllCustomCollection && self.cache.listAllCustomCollection[fields]) {
+            return callback(null, self.cache.listAllCustomCollection[fields]);
+        }
+        self.api('customCollection', 'listAll', {fields: fields}, (error, data) => {
+            console.log('api callback: customCollection listAll');
+            if (!error && cache) {
+                self.cache.listAllCustomCollection[fields] = data;
+            }
+            callback(error, data);
+        });
+    }
 
 }
 
