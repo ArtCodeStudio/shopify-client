@@ -485,6 +485,29 @@ export class VideoAPI extends Api {
     };
 
     /**
+     *  server route : api/product-videos/:shopName/videos/get
+     *  eg: https://dev.video.api.jumplink.eu/api/product-videos/anita-hass-2/videos/get
+     */
+    public getVimeoVideos() {
+
+        let resource = 'videos';
+        let method = 'get';
+
+        return new Promise( (resolve, reject) => {
+            this.call( 'videos', 'get', {
+                a: "none",
+            }, (error, result) => {
+                // console.info('...getVimeoVideos resolve', result);
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+    }
+    
+    /**
      * server route : 
      * /api/:appName/:shopName/video/convert
      */
