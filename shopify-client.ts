@@ -378,6 +378,7 @@ export class ShopifyClient extends Api {
         });
     }
 
+<<<<<<< HEAD
 
 }
 
@@ -870,6 +871,8 @@ export class ShopifyClient extends Api {
             callback(error, data);
         });
     }
+=======
+>>>>>>> parent of 60d01f8... added Promise wrapper for api call method
 
 
 }
