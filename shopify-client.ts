@@ -457,9 +457,6 @@ export class ShopifyClient extends Api {
 
 export class VideoAPI extends Api {
 
-    // public config: ShopifyClientConfig;
-    // private _firebase;
-
     constructor(config: ShopifyClientConfig, apiBaseUrl: string, callback) {
         super(config, apiBaseUrl);
         // this.config = config;
@@ -475,27 +472,7 @@ export class VideoAPI extends Api {
         jqxhr.fail((xhr: JQueryXHR, textStatus: string, errorThrown: string) => {
             return callback(textStatus);
         });
-
-        // this.initFirebase();
-
     }
-
-    initFirebase() {
-        console.info('VideoAPI initFirebase');
-        // return this._firebase = firebase.initializeApp( this.config.firebase );
-        // console.info('VideoAPI firebase?', this.firebase )
-    }
-
-    /**
-     * 
-     * 
-     */
-    api(resource, method, params, callback): any {
-
-        // console.log('VideoAPI.api request:', resource, method, params);
-        // console.info('VideoAPI.api.config', this.config );
-        return this.call(resource, method, params, callback);
-    };
 
     /**
      * 
@@ -503,33 +480,7 @@ export class VideoAPI extends Api {
      */
     public createThumbnail( dataURL: string, shopName: string, productID: string ) {
         return new Promise( ( resolve, reject ) => {
-
-            // console.info('VideoAPI.api.config', this.config );
-
-            // let firebase =  shopifyClient.firebase;
-
-            // let storageRef = firebase.storage().ref().child( shopName + '/' + productID + '/poster.png' );
-
             resolve('OK');
-                // storageRef.put(file).then( (snapshot) => {
-                //     console.log('Uploaded a blob or file!',snapshot)
-                //     console.log(snapshot.a.downloadURLs[0])
-
-                // })
-
-            // let resource = 'thumbnail';
-            // let method = 'create';
-            // let params = {
-            //     currentTime: currentTime,
-            //     videoName: videoName
-            // };
-
-            // this.call( resource, method, params, () => {
-            //     resolve();
-            // });
-
-            // console.info('result: ', result);
-            // const el = this.elementRef.nativeElement.cloneNode(true);
         });
     };
 
