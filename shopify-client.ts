@@ -1,6 +1,4 @@
-/// <reference path='node_modules/@types/jquery/index.d.ts' />
-/// <reference path='node_modules/@types/underscore/index.d.ts' />
-/// <reference path='node_modules/@types/es6-promise/index.d.ts' />
+
 
 // /// <reference path='assets/vendor/firebase/firebase.d.ts' />
 /// <reference path='firebase.d.ts' />
@@ -534,6 +532,27 @@ export class VideoAPI extends Api {
             // const el = this.elementRef.nativeElement.cloneNode(true);
         });
     };
+
+    /**
+     * server route : 
+     * /api/:appName/:shopName/video/convert
+     */
+    public convertVideo( downloadURL, productID, shopifyAccessToken ): Promise<any> {
+
+        let resource = 'video';
+        let method = 'convert';
+        let params = downloadURL;
+
+        return new Promise( (resolve, reject) => {
+            this.call( 'video', 'convert', {
+                productID: productID,
+                downloadURL: downloadURL,
+                shopifyAccessToken: shopifyAccessToken //from firebase
+            }, () => {
+                resolve(); // no return value needed atm
+            });
+        });
+    }
 
     /**
      * 
