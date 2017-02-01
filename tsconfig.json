@@ -3,7 +3,7 @@
         "sourceMap": true,
         "declaration": true,
         "target": "es5",
-        "module": "none",
+        "module": "system",
         "experimentalDecorators": true,
         "outFile": "shopify-client.js"
     },

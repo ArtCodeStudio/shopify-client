@@ -63,7 +63,7 @@ System.register("shopify-client", [], function (exports_2, context_2) {
                         query = '&' + query;
                     }
                     var url = this.apiBaseUrl + "/api/" + this.config.appName + "/" + this.config.shopify.shopName + "/" + resource + "/" + method + "?callback=?" + query;
-                    // console.log('Api.call request:', url);
+                    console.log('Api.call request:', url);
                     var jqxhr = $.getJSON(url)
                         .done(function (data, textStatus, errorThrown) {
                         // console.log('Api.call result:', data);
@@ -412,6 +412,23 @@ System.register("shopify-client", [], function (exports_2, context_2) {
                     });
                 };
                 ;
+                /**
+                 * server route : /api/:appName/:shopName/video/convert
+                 */
+                VideoAPI.prototype.convertVideo = function (downloadURL, productID) {
+                    var _this = this;
+                    var resource = 'video';
+                    var method = 'convert';
+                    var params = downloadURL;
+                    return new Promise(function (resolve, reject) {
+                        _this.call('video', 'convert', {
+                            productID: productID,
+                            downloadURL: downloadURL
+                        }, function () {
+                            resolve();
+                        });
+                    });
+                };
                 /**
                  *
                  */

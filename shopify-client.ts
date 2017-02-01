@@ -1,3 +1,4 @@
+import { VimeoVideo } from './../../../angular/dev/src/app/product/product.component';
 /// <reference path='node_modules/@types/jquery/index.d.ts' />
 /// <reference path='node_modules/@types/underscore/index.d.ts' />
 /// <reference path='node_modules/@types/es6-promise/index.d.ts' />
@@ -58,7 +59,7 @@ export class Api {
         }
 
         let url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/${resource}/${method}?callback=?${query}`;
-        // console.log('Api.call request:', url);
+        console.log('Api.call request:', url);
         let jqxhr = $.getJSON( url)
         .done(function(data: JQueryXHR, textStatus: string, errorThrown: string) {
             // console.log('Api.call result:', data);
@@ -382,9 +383,6 @@ export class ShopifyClient extends Api {
 
 export class VideoAPI extends Api {
 
-    // public config: ShopifyClientConfig;
-    // private _firebase;
-
     constructor(config: ShopifyClientConfig, apiBaseUrl: string, callback) {
         super(config, apiBaseUrl);
         // this.config = config;
@@ -401,65 +399,89 @@ export class VideoAPI extends Api {
             return callback(textStatus);
         });
 
-        // this.initFirebase();
-
     }
 
-    initFirebase() {
-        console.info('VideoAPI initFirebase');
-        // return this._firebase = firebase.initializeApp( this.config.firebase );
-        // console.info('VideoAPI firebase?', this.firebase )
-    }
+    // api(resource, method, params, callback): any {
+
+    //     return this.call(resource, method, params, callback);
+    // };
 
     /**
-     * 
-     * 
-     */
-    api(resource, method, params, callback): any {
-
-        // console.log('VideoAPI.api request:', resource, method, params);
-        // console.info('VideoAPI.api.config', this.config );
-        return this.call(resource, method, params, callback);
-    };
-
-    /**
-     * 
      *  target url: api/:appName/:shopName/thumbnail/delete 
      */
     public createThumbnail( dataURL: string, shopName: string, productID: string ) {
         return new Promise( ( resolve, reject ) => {
-
-            // console.info('VideoAPI.api.config', this.config );
-
-            // let firebase =  shopifyClient.firebase;
-
-            // let storageRef = firebase.storage().ref().child( shopName + '/' + productID + '/poster.png' );
-
             resolve('OK');
-                // storageRef.put(file).then( (snapshot) => {
-                //     console.log('Uploaded a blob or file!',snapshot)
-                //     console.log(snapshot.a.downloadURLs[0])
-
-                // })
-
-            // let resource = 'thumbnail';
-            // let method = 'create';
-            // let params = {
-            //     currentTime: currentTime,
-            //     videoName: videoName
-            // };
-
-            // this.call( resource, method, params, () => {
-            //     resolve();
-            // });
-
-            // console.info('result: ', result);
-            // const el = this.elementRef.nativeElement.cloneNode(true);
         });
     };
 
     /**
-     * 
+     *  server route : api/product-videos/:shopName/videos/get
+     *  eg: https://dev.video.api.jumplink.eu/api/product-videos/anita-hass-2/videos/get
+     */
+    public getVimeoVideos() {
+
+        let resource = 'videos';
+        let method = 'get';
+
+        return new Promise( (resolve, reject) => {
+            this.call( 'videos', 'get', {
+                a: "none",
+            }, (error, result) => {
+                // console.info('...getVimeoVideos resolve', result);
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+    }
+
+    /**
+     * server route : api/product-videos/:shopName/videos/set
+     * /api/:appName/:shopName/product/update 
+     */
+    public setShopifyMetadata( vimeoVideo:VimeoVideo ) {
+
+        let resource = 'product';
+        // let method = 'update';
+        // let params = downloadURL;
+
+        // return new Promise( (resolve, reject) => {
+        //     this.call( 'video', 'convert', {
+        //         productID: productID,
+        //         downloadURL: downloadURL,
+        //         shopifyAccessToken: shopifyAccessToken //from firebase
+        //     }, () => {
+        //         resolve(); // no return value needed atm
+        //     });
+        // });
+    }
+
+    /**
+     * server route : 
+     * /api/:appName/:shopName/video/convert
+     */
+    public convertVideo( downloadURL, productID, shopifyAccessToken ): Promise<any> {
+
+        let resource = 'video';
+        let method = 'convert';
+        let params = downloadURL;
+
+        return new Promise( (resolve, reject) => {
+            this.call( 'video', 'convert', {
+                productID: productID,
+                downloadURL: downloadURL,
+                shopifyAccessToken: shopifyAccessToken //from firebase
+            }, () => {
+                resolve(); // no return value needed atm
+            });
+        });
+    }
+
+    /**
+     *    call: self.videoAPI.deleteVideo(self.selectedProductID, self.config.firebase.idToken, (error, result) => {
      */
     public deleteVideo(productID, firebaseIdToken, callback): any {
         let resource = 'video';

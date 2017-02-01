@@ -339,6 +339,10 @@ declare module "shopify-client" {
          */
         createThumbnail(dataURL: string, shopName: string, productID: string): Promise<{}>;
         /**
+         * server route : /api/:appName/:shopName/video/convert
+         */
+        convertVideo(downloadURL: any, productID: any): Promise<any>;
+        /**
          *
          */
         deleteVideo(productID: any, firebaseIdToken: any, callback: any): any;
