@@ -1,4 +1,6 @@
-
+/// <reference path='node_modules/@types/jquery/index.d.ts' />
+/// <reference path='node_modules/@types/underscore/index.d.ts' />
+/// <reference path='node_modules/@types/es6-promise/index.d.ts' />
 
 // /// <reference path='assets/vendor/firebase/firebase.d.ts' />
 /// <reference path='firebase.d.ts' />
