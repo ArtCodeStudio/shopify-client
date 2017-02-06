@@ -7,7 +7,7 @@
 
 import { shopify } from './shopifyEASDK';
 
-declare let ShopifyApp: shopify.EASDK;
+declare const ShopifyApp: shopify.EASDK;
 
 export class ShopifyClientConfigFirebase extends Object {
     apiKey: string;
@@ -220,7 +220,7 @@ export class ShopifyClient extends Api {
 
     /**
      * Initiates the sign-in flow using Shopify oauth sign in
-     * 
+     *
      */
     getAccess (shopName: string): void {
         console.log('getAccess', shopName);
@@ -336,10 +336,11 @@ export class ShopifyClient extends Api {
         let self = this;
         return new Promise( (resolve : (value) => void, reject: (reason) => void) => {
             self.api(resource, method, params, (error, data) => {
-                if (error)
+                if (error) {
                     reject(error);
-                else
+                } else {
                     resolve(data);
+                }
             });
         });
     };
@@ -464,9 +465,10 @@ export class VideoAPI extends Api {
         // this.config = config;
         // console.log('VideoAPI.constructor', this.config);
 
-        let url = `${this.apiBaseUrl}/init/${this.config.appName}/${this.config.shopify.shopName}/${this.config.firebase.idToken}?callback=?`;
+        // tslint:disable-next-line:max-line-length
+        const url = `${this.apiBaseUrl}/init/${this.config.appName}/${this.config.shopify.shopName}/${this.config.firebase.idToken}?callback=?`;
 
-        let jqxhr = $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
+        const jqxhr = $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
             // console.log('ShopifyClient.api result:', data);
             return callback(null, data);
         });
@@ -477,7 +479,7 @@ export class VideoAPI extends Api {
     }
 
     /**
-     * 
+     *
      *  target url: api/:appName/:shopName/thumbnail/delete 
      */
     public createThumbnail( dataURL: string, shopName: string, productID: string ) {
@@ -487,17 +489,26 @@ export class VideoAPI extends Api {
     };
 
     /**
-     *  server route : api/product-videos/:shopName/videos/get
+     * https://help.shopify.com/api/reference/metafield#create
+     */
+    public createProductMeta() {
+
+    }
+
+    /**
+     *  server route :
+     *  api/product-videos/:shopName/videos/get
      *  eg: https://dev.video.api.jumplink.eu/api/product-videos/anita-hass-2/videos/get
      */
-    public getVimeoVideos() {
+    public getVimeoVideos(page: number, per_page: number) {
 
-        let resource = 'videos';
-        let method = 'get';
+        const resource = 'videos';
+        const method = 'get';
 
         return new Promise( (resolve, reject) => {
-            this.call( 'videos', 'get', {
-                a: "none",
+            this.call( resource, method, {
+                page: page,
+                per_page: per_page
             }, (error, result) => {
                 // console.info('...getVimeoVideos resolve', result);
                 if (error) {
@@ -508,22 +519,45 @@ export class VideoAPI extends Api {
             });
         });
     }
-    
+
     /**
-     * server route : 
+     * server route:
+     * eg: https://dev.video.api.jumplink.eu/api/product-videos/anita-hass-2/videos/search?name=test
+     */
+    public searchVimeoVideoByName( name: string ) {
+
+        const resource = 'videos';
+        const method = 'search';
+
+        return new Promise( (resolve, reject) => {
+            this.call( resource, method, {
+                name: name,
+            }, (error, result) => {
+                // console.info('...getVimeoVideos resolve', result);
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+    }
+
+    /**
+     * server route :
      * /api/:appName/:shopName/video/convert
      */
     public convertVideo( downloadURL, productID, shopifyAccessToken ): Promise<any> {
 
-        let resource = 'video';
-        let method = 'convert';
-        let params = downloadURL;
+        const resource = 'video';
+        const method = 'convert';
+        // let params = downloadURL;
 
         return new Promise( (resolve, reject) => {
-            this.call( 'video', 'convert', {
+            this.call( resource, method, {
                 productID: productID,
                 downloadURL: downloadURL,
-                shopifyAccessToken: shopifyAccessToken //from firebase
+                shopifyAccessToken: shopifyAccessToken // from firebase
             }, () => {
                 resolve(); // no return value needed atm
             });
@@ -534,8 +568,8 @@ export class VideoAPI extends Api {
      * 
      */
     public deleteVideo(productID, firebaseIdToken, callback): any {
-        let resource = 'video';
-        let method = 'delete';
+        const resource = 'video';
+        const method = 'delete';
         return this.call(resource, method, {
             productID: productID,
             firebaseIdToken: firebaseIdToken,

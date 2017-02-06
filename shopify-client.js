@@ -63,7 +63,7 @@ System.register("shopify-client", [], function (exports_2, context_2) {
                         query = '&' + query;
                     }
                     var url = this.apiBaseUrl + "/api/" + this.config.appName + "/" + this.config.shopify.shopName + "/" + resource + "/" + method + "?callback=?" + query;
-                    console.log('Api.call request:', url);
+                    // console.log('Api.call request:', url);
                     var jqxhr = $.getJSON(url)
                         .done(function (data, textStatus, errorThrown) {
                         // console.log('Api.call result:', data);
@@ -87,7 +87,10 @@ System.register("shopify-client", [], function (exports_2, context_2) {
                      * Cache api results
                     */
                     _this.cache = {
-                        listAllProduct: {}
+                        listAllProduct: {},
+                        listAllCustomer: {},
+                        listAllSmartCollection: {},
+                        listAllCustomCollection: {},
                     };
                     _this.authBaseUrl = authBaseUrl;
                     return _this;
@@ -282,7 +285,7 @@ System.register("shopify-client", [], function (exports_2, context_2) {
                 };
                 ;
                 /**
-                 * API calls are based on tthis bindings: https://github.com/MONEI/Shopify-api-node
+                 * API calls are based on these bindings: https://github.com/MONEI/Shopify-api-node
                  */
                 ShopifyClient.prototype.api = function (resource, method, params, callback) {
                     var self = this;
@@ -299,6 +302,23 @@ System.register("shopify-client", [], function (exports_2, context_2) {
                             return;
                         }, 3000);
                     }
+                };
+                ;
+                /**
+                 * The same as above wrapped in Promise semantics
+                 */
+                ShopifyClient.prototype.apiPromise = function (resource, method, params) {
+                    var self = this;
+                    return new Promise(function (resolve, reject) {
+                        self.api(resource, method, params, function (error, data) {
+                            if (error) {
+                                reject(error);
+                            }
+                            else {
+                                resolve(data);
+                            }
+                        });
+                    });
                 };
                 ;
                 ShopifyClient.prototype.deleteMetafield = function (id, callback) {
@@ -334,6 +354,20 @@ System.register("shopify-client", [], function (exports_2, context_2) {
                         return callback(null, productMetafields);
                     });
                 };
+                ShopifyClient.prototype.listMetafieldByCustomer = function (customerId, callback) {
+                    var self = this;
+                    self.api('metafield', 'list', {
+                        metafield: {
+                            owner_resource: 'customer',
+                            owner_id: customerId
+                        }
+                    }, function (err, customerMetafields) {
+                        if (err) {
+                            return callback(err);
+                        }
+                        return callback(null, customerMetafields);
+                    });
+                };
                 ShopifyClient.prototype.listAllProduct = function (cache, fields, callback) {
                     // console.log('listAllProduct', cache, fields);
                     var self = this;
@@ -347,17 +381,58 @@ System.register("shopify-client", [], function (exports_2, context_2) {
                         callback(error, data);
                     });
                 };
+                ShopifyClient.prototype.listAllCustomer = function (cache, fields, callback) {
+                    console.log('listAllCustomer', cache, fields);
+                    var self = this;
+                    if (cache && self.cache && self.cache.listAllCustomer && self.cache.listAllCustomer[fields]) {
+                        return callback(null, self.cache.listAllCustomer[fields]);
+                    }
+                    self.api('customer', 'listAll', { fields: fields }, function (error, data) {
+                        console.log('customer listAll');
+                        if (!error && cache) {
+                            self.cache.listAllCustomer[fields] = data;
+                        }
+                        callback(error, data);
+                    });
+                };
+                ShopifyClient.prototype.listAllSmartCollection = function (cache, fields, callback) {
+                    console.log('shopify-client: listAllSmartCollection', cache, fields);
+                    var self = this;
+                    if (cache && self.cache && self.cache.listAllSmartCollection && self.cache.listAllSmartCollection[fields]) {
+                        return callback(null, self.cache.listAllSmartCollection[fields]);
+                    }
+                    self.api('smartCollection', 'listAll', { fields: fields }, function (error, data) {
+                        console.log('api callback: smartCollection listAll');
+                        if (!error && cache) {
+                            self.cache.listAllSmartCollection[fields] = data;
+                        }
+                        callback(error, data);
+                    });
+                };
+                ShopifyClient.prototype.listAllCustomCollection = function (cache, fields, callback) {
+                    console.log('shopify-client: listAllCustomCollection', cache, fields);
+                    var self = this;
+                    if (cache && self.cache && self.cache.listAllCustomCollection && self.cache.listAllCustomCollection[fields]) {
+                        return callback(null, self.cache.listAllCustomCollection[fields]);
+                    }
+                    self.api('customCollection', 'listAll', { fields: fields }, function (error, data) {
+                        console.log('api callback: customCollection listAll');
+                        if (!error && cache) {
+                            self.cache.listAllCustomCollection[fields] = data;
+                        }
+                        callback(error, data);
+                    });
+                };
                 return ShopifyClient;
             }(Api));
             exports_2("ShopifyClient", ShopifyClient);
             VideoAPI = (function (_super) {
                 __extends(VideoAPI, _super);
-                // public config: ShopifyClientConfig;
-                // private _firebase;
                 function VideoAPI(config, apiBaseUrl, callback) {
                     var _this = _super.call(this, config, apiBaseUrl) || this;
                     // this.config = config;
                     // console.log('VideoAPI.constructor', this.config);
+                    // tslint:disable-next-line:max-line-length
                     var url = _this.apiBaseUrl + "/init/" + _this.config.appName + "/" + _this.config.shopify.shopName + "/" + _this.config.firebase.idToken + "?callback=?";
                     var jqxhr = $.getJSON(url, function (data, textStatus, jqXHR) {
                         // console.log('ShopifyClient.api result:', data);
@@ -367,65 +442,60 @@ System.register("shopify-client", [], function (exports_2, context_2) {
                         return callback(textStatus);
                     });
                     return _this;
-                    // this.initFirebase();
                 }
-                VideoAPI.prototype.initFirebase = function () {
-                    console.info('VideoAPI initFirebase');
-                    // return this._firebase = firebase.initializeApp( this.config.firebase );
-                    // console.info('VideoAPI firebase?', this.firebase )
-                };
-                /**
-                 *
-                 *
-                 */
-                VideoAPI.prototype.api = function (resource, method, params, callback) {
-                    // console.log('VideoAPI.api request:', resource, method, params);
-                    // console.info('VideoAPI.api.config', this.config );
-                    return this.call(resource, method, params, callback);
-                };
-                ;
                 /**
                  *
                  *  target url: api/:appName/:shopName/thumbnail/delete
                  */
                 VideoAPI.prototype.createThumbnail = function (dataURL, shopName, productID) {
                     return new Promise(function (resolve, reject) {
-                        // console.info('VideoAPI.api.config', this.config );
-                        // let firebase =  shopifyClient.firebase;
-                        // let storageRef = firebase.storage().ref().child( shopName + '/' + productID + '/poster.png' );
                         resolve('OK');
-                        // storageRef.put(file).then( (snapshot) => {
-                        //     console.log('Uploaded a blob or file!',snapshot)
-                        //     console.log(snapshot.a.downloadURLs[0])
-                        // })
-                        // let resource = 'thumbnail';
-                        // let method = 'create';
-                        // let params = {
-                        //     currentTime: currentTime,
-                        //     videoName: videoName
-                        // };
-                        // this.call( resource, method, params, () => {
-                        //     resolve();
-                        // });
-                        // console.info('result: ', result);
-                        // const el = this.elementRef.nativeElement.cloneNode(true);
                     });
                 };
                 ;
                 /**
-                 * server route : /api/:appName/:shopName/video/convert
+                 * https://help.shopify.com/api/reference/metafield#create
                  */
-                VideoAPI.prototype.convertVideo = function (downloadURL, productID) {
+                VideoAPI.prototype.createProductMeta = function () {
+                };
+                /**
+                 *  server route : api/product-videos/:shopName/videos/get
+                 *  eg: https://dev.video.api.jumplink.eu/api/product-videos/anita-hass-2/videos/get
+                 */
+                VideoAPI.prototype.getVimeoVideos = function () {
+                    var _this = this;
+                    var resource = 'videos';
+                    var method = 'get';
+                    return new Promise(function (resolve, reject) {
+                        _this.call(resource, method, {
+                            a: 'none',
+                        }, function (error, result) {
+                            // console.info('...getVimeoVideos resolve', result);
+                            if (error) {
+                                reject(error);
+                            }
+                            else {
+                                resolve(result);
+                            }
+                        });
+                    });
+                };
+                /**
+                 * server route :
+                 * /api/:appName/:shopName/video/convert
+                 */
+                VideoAPI.prototype.convertVideo = function (downloadURL, productID, shopifyAccessToken) {
                     var _this = this;
                     var resource = 'video';
                     var method = 'convert';
-                    var params = downloadURL;
+                    // let params = downloadURL;
                     return new Promise(function (resolve, reject) {
-                        _this.call('video', 'convert', {
+                        _this.call(resource, method, {
                             productID: productID,
-                            downloadURL: downloadURL
+                            downloadURL: downloadURL,
+                            shopifyAccessToken: shopifyAccessToken //from firebase
                         }, function () {
-                            resolve();
+                            resolve(); // no return value needed atm
                         });
                     });
                 };

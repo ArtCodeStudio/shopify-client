@@ -317,31 +317,43 @@ declare module "shopify-client" {
         signIn(shopName: string, callback: (error?: any, data?: any) => void): void;
         singOut(accessToken: string, callback: (error?: any, data?: any) => void): void;
         /**
-         * API calls are based on tthis bindings: https://github.com/MONEI/Shopify-api-node
+         * API calls are based on these bindings: https://github.com/MONEI/Shopify-api-node
          */
         api(resource: string, method: string, params: any, callback: (error?: any, data?: any) => void): void;
+        /**
+         * The same as above wrapped in Promise semantics
+         */
+        apiPromise(resource: string, method: string, params: any): Promise<any>;
         deleteMetafield(id: any, callback: (error?: any, data?: any) => void): void;
         deleteAllMetafield(ids: Array<Number>, callback: (error?: any, data?: any) => void): void;
         listMetafieldByProduct(productId: any, callback: (error?: any, data?: any) => void): void;
+        listMetafieldByCustomer(customerId: any, callback: (error?: any, data?: any) => void): void;
         listAllProduct(cache: any, fields: any, callback: (error?: any, data?: any) => void): void;
+        listAllCustomer(cache: any, fields: any, callback: (error?: any, data?: any) => void): void;
+        listAllSmartCollection(cache: any, fields: any, callback: (error?: any, data?: any) => void): void;
+        listAllCustomCollection(cache: any, fields: any, callback: (error?: any, data?: any) => void): void;
     }
     export class VideoAPI extends Api {
         constructor(config: ShopifyClientConfig, apiBaseUrl: string, callback: any);
-        initFirebase(): void;
-        /**
-         *
-         *
-         */
-        api(resource: any, method: any, params: any, callback: any): any;
         /**
          *
          *  target url: api/:appName/:shopName/thumbnail/delete
          */
         createThumbnail(dataURL: string, shopName: string, productID: string): Promise<{}>;
         /**
-         * server route : /api/:appName/:shopName/video/convert
+         * https://help.shopify.com/api/reference/metafield#create
          */
-        convertVideo(downloadURL: any, productID: any): Promise<any>;
+        createProductMeta(): void;
+        /**
+         *  server route : api/product-videos/:shopName/videos/get
+         *  eg: https://dev.video.api.jumplink.eu/api/product-videos/anita-hass-2/videos/get
+         */
+        getVimeoVideos(): Promise<{}>;
+        /**
+         * server route :
+         * /api/:appName/:shopName/video/convert
+         */
+        convertVideo(downloadURL: any, productID: any, shopifyAccessToken: any): Promise<any>;
         /**
          *
          */
