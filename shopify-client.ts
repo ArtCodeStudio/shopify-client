@@ -47,11 +47,12 @@ export class Api {
     }
 
     /**
-     * API calls are based on tthis bindings: https://github.com/MONEI/Shopify-api-node
+     * API calls are based on these bindings: https://github.com/MONEI/Shopify-api-node
      * But wrapped with or own microserive: https://git.mediamor.de/jumplink.eu/microservice-shopify
      */
     call (resource: string, method: string, params: any, callback: (error?: any, data?: any) => void ): void {
-        let query = $.param(params);
+        // avoid error "cannot read property jquery of undefined": set empty instead
+        let query = params ? $.param(params): [];
 
         if (query.length > 0) {
             query = '&' + query;
