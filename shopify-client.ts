@@ -262,9 +262,9 @@ export class ShopifyClient extends Api {
         let self = this;
 
         let url = `${this.authBaseUrl}/token/${this.config.appName}/${shopName}?callback=?`;
-        $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
+        $.getJSON(url).done((data: any, textStatus: string, jqXHR: JQueryXHR) => {
 
-			if (typeof(data.firebaseToken) === 'string') {
+            if (typeof(data.firebaseToken) === 'string') {
 
                 // console.log('microservice-auth result', data );
 
@@ -293,11 +293,11 @@ export class ShopifyClient extends Api {
                 console.error(new Error('Das hätte nicht passieren dürfen, bitte Microservice überprüfen.'));
             }
 
-        }).error(function(event, jqxhr, exception) {
+        }).fail((event, jqxhr, exception) => {
             if (jqxhr.status == 404) {
                 console.error('Token not found');
             }
-          	self.getAccess(shopName);
+            self.getAccess(shopName);
         });
     };
 
