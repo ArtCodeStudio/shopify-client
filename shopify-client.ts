@@ -1,8 +1,5 @@
 /// <reference path='node_modules/@types/jquery/index.d.ts' />
 /// <reference path='node_modules/@types/underscore/index.d.ts' />
-// /// <reference path='node_modules/@types/es6-promise/index.d.ts' />
-
-// /// <reference path='assets/vendor/firebase/firebase.d.ts' />
 /// <reference path='firebase.d.ts' />
 
 import { shopify } from './shopifyEASDK';
@@ -51,6 +48,9 @@ export class Api {
      * But wrapped with or own microserive: https://git.mediamor.de/jumplink.eu/microservice-shopify
      */
     call (resource: string, method: string, params: any, callback: (error?: any, data?: any) => void ): void {
+
+        console.warn('api: ', resource, method, params);
+
         // avoid error "cannot read property jquery of undefined": set empty instead
         let query = params ? $.param(params): [];
 
@@ -58,7 +58,9 @@ export class Api {
             query = '&' + query;
         }
 
-        let url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/${resource}/${method}?callback=?${query}`;
+        let json = JSON.stringify(params || {});
+
+        let url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/${resource}/${method}?callback=?&json=${json}`;
         // console.log('Api.call request:', url);
         let jqxhr = $.getJSON( url)
         .done(function(data: JQueryXHR, textStatus: string, errorThrown: string) {
@@ -238,7 +240,8 @@ export class ShopifyClient extends Api {
     initApi (shopName: string, firebaseIdToken: string, cb: (error: any, data?: any) => void ): void {
         let self = this;
         // console.log('initApi', shopName, firebaseIdToken);
-        let url = `${this.apiBaseUrl}/init/${this.config.appName}/${shopName}/${firebaseIdToken}?callback=?`;
+        let url = `${this.apiBaseUrl}/api/${this.config.appName}/${shopName}/init/${firebaseIdToken}?callback=?`;
+        console.debug('initApi', url);
         let jqxhr = $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
             // console.log('greate you are signed in. shop:', data);  
             self.ready = true; // TODO use event?
@@ -308,7 +311,7 @@ export class ShopifyClient extends Api {
     };
 
     singOut (accessToken: string, callback: (error?: any, data?: any) => void ): void {
-        let url = `${this.apiBaseUrl}/signout/${this.config.appName}/${this.config.shopify.shopName}?callback=?`;
+        let url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/signout?callback=?`;
         let jqxhr = $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
             // console.log('you are signed out:', data);
             return callback(null, data);
@@ -322,35 +325,24 @@ export class ShopifyClient extends Api {
     /**
      * API calls are based on these bindings: https://github.com/MONEI/Shopify-api-node
      */
-    api (resource: string, method: string, params: any, callback: (error?: any, data?: any) => void ): void {
-        let self = this;
-        if (self.ready) {
-            console.warn('api: ', resource, method);
-            self.call(resource, method, params, callback);
-            return;
-        } else {
-            console.warn(new Error('api not ready, try again..'));
-            // WORKAROUND need better Solution
-            setTimeout(() => {
-                self.api(resource, method, params, callback);
-                return;
-            }, 3000);
-        }
-    };
-
-    /**
-     * The same as above wrapped in Promise semantics
-     */
-    apiPromise (resource: string, method: string, params: any ): Promise<any> {
+    api (resource: string, method: string, params: any, callback?: (error?: any, data?: any) => void ): Promise<any> {
         let self = this;
         return new Promise( (resolve : (value) => void, reject: (reason) => void) => {
-            self.api(resource, method, params, (error, data) => {
-                if (error) {
-                    reject(error);
-                } else {
-                    resolve(data);
-                }
-            });
+            if (self.ready) {
+                self.call(resource, method, params, (error, data) => {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve(data);
+                    }
+                    if(callback) {
+                        callback(error, data);
+                    }
+                });
+                return;
+            } else {
+                reject(new Error('api not ready, try again..'));
+            }
         });
     };
 
