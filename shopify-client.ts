@@ -45,31 +45,36 @@ export class Api {
 
     /**
      * API calls are based on these bindings: https://github.com/MONEI/Shopify-api-node
-     * But wrapped with or own microserive: https://git.mediamor.de/jumplink.eu/microservice-shopify
+     * But wrapped with or own middleware: https://github.com/JumpLinkNetwork/shopify-server
      */
-    call (resource: string, method: string, params: any, callback: (error?: any, data?: any) => void ): void {
+    call (resource: string, method: string, params: any, callback: (error?: any, data?: any) => void ): Promise<any> {
 
-        console.warn('api: ', resource, method, params);
-
-        // avoid error "cannot read property jquery of undefined": set empty instead
-        let query = params ? $.param(params): [];
-
-        if (query.length > 0) {
-            query = '&' + query;
+        if (typeof(callback) === 'function') {
+            console.warn(new Error(`The callback of this method is marked as deprecated
+            and will be removed in the next version, use Prmoises instead`));
         }
 
-        let json = JSON.stringify(params || {});
+        const json = JSON.stringify(params || {});
 
-        let url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/${resource}/${method}?callback=?&json=${json}`;
+        const url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/${resource}/${method}?callback=?&json=${json}`;
+
         // console.log('Api.call request:', url);
-        let jqxhr = $.getJSON( url)
-        .done(function(data: JQueryXHR, textStatus: string, errorThrown: string) {
-            // console.log('Api.call result:', data);
-            return callback(null, data);
-        })
-        .fail((data: JQueryXHR, textStatus: string, errorThrown: string) => {
-            console.error(data, textStatus, errorThrown);
-            return callback(textStatus);
+        return new Promise( (resolve: (value) => void, reject: (reason) => void) => {
+            $.getJSON( url)
+            .done(function(data: JQueryXHR, textStatus: string, errorThrown: string) {
+                // console.log('Api.call result:', data);
+                if (typeof(callback) === 'function') {
+                    callback(null, data);
+                }
+                resolve(data);
+            })
+            .fail((data: JQueryXHR, textStatus: string, errorThrown: string) => {
+                console.error(data, textStatus, errorThrown);
+                if (typeof(callback) === 'function') {
+                    callback(textStatus);
+                }
+                reject(textStatus);
+            });
         });
     };
 }
@@ -169,7 +174,7 @@ export class ShopifyClient extends Api {
      * 
      * @see https://help.shopify.com/api/sdks/embedded-app-sdk/initialization
      */
-    initShopify(protocol: string, shop: string, shopName: string, callback: (error?: any, data?: any) => void): void {
+    initShopify(protocol: string, shop: string, shopName: string, callback?: (error?: any, data?: any) => void): void {
         // console.log('initShopify', protocol, shop, shopName);
 
         // init shopify if this is in iframe, if not get access and redirect back to the shopify app page
@@ -326,28 +331,24 @@ export class ShopifyClient extends Api {
      * API calls are based on these bindings: https://github.com/MONEI/Shopify-api-node
      */
     api (resource: string, method: string, params: any, callback?: (error?: any, data?: any) => void ): Promise<any> {
-        let self = this;
-        return new Promise( (resolve : (value) => void, reject: (reason) => void) => {
-            if (self.ready) {
-                self.call(resource, method, params, (error, data) => {
-                    if (error) {
-                        reject(error);
-                    } else {
-                        resolve(data);
-                    }
-                    if(callback) {
-                        callback(error, data);
-                    }
-                });
-                return;
-            } else {
+        const self = this;
+
+        if (typeof(callback) === 'function') {
+            console.warn(new Error(`The callback of this method is marked as deprecated
+            and will be removed in the next version, use Prmoises instead`));
+        }
+
+        if (self.ready) {
+            return self.call(resource, method, params, callback);
+        } else {
+            return new Promise( (resolve: (value) => void, reject: (reason) => void) => {
                 reject(new Error('api not ready, try again..'));
-            }
-        });
+            });
+        }
     };
 
     deleteMetafield(id, callback: (error?: any, data?: any) => void) {
-        let self = this;
+        const self = this;
         self.api('metafield', 'delete', id, ( err , result) => {
             if (err) {
                 return callback(err);
@@ -357,7 +358,7 @@ export class ShopifyClient extends Api {
     }
 
     deleteAllMetafield(ids: Array<Number>, callback: (error?: any, data?: any) => void) {
-        let self = this;
+        const self = this;
 
         console.log('deleteAllMetafield', ids);
         self.api('metafield', 'deleteAll', {ids: ids}, ( err , result) => {
