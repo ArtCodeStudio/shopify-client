@@ -48,23 +48,13 @@ export class Api {
      * But wrapped with or own microserive: https://git.mediamor.de/jumplink.eu/microservice-shopify
      */
     call (resource: string, method: string, params: any, callback: (error?: any, data?: any) => void ): void {
-
         console.warn('api: ', resource, method, params);
 
-        // avoid error "cannot read property jquery of undefined": set empty instead
-        let query = params ? $.param(params): [];
-
-        if (query.length > 0) {
-            query = '&' + query;
-        }
-
         let json = JSON.stringify(params || {});
-
         let url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/${resource}/${method}?callback=?&json=${json}`;
-        // console.log('Api.call request:', url);
+
         let jqxhr = $.getJSON( url)
         .done(function(data: JQueryXHR, textStatus: string, errorThrown: string) {
-            // console.log('Api.call result:', data);
             return callback(null, data);
         })
         .fail((data: JQueryXHR, textStatus: string, errorThrown: string) => {
