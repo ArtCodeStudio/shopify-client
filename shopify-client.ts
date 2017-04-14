@@ -59,7 +59,7 @@ export class Api {
         const url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/${resource}/${method}?callback=?&json=${json}`;
 
         // console.log('Api.call request:', url);
-        return new Promise( (resolve: (value) => void, reject: (reason) => void) => {
+        return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
             $.getJSON( url)
             .done(function(data: JQueryXHR, textStatus: string, errorThrown: string) {
                 // console.log('Api.call result:', data);
@@ -140,13 +140,13 @@ export class ShopifyClient extends Api {
     }
 
     initEmbeddedSDK(protocol: string, shop: string, callback: (error?: any, data?: any) => void): any {
-        let initSDKConfig = {
+        const initSDKConfig = {
             apiKey: this.config.shopify.apiKey,
             shopOrigin: protocol + shop,
             debug: this.config.debug
         };
 
-        let self = this;
+        const self = this;
 
         // console.log('init Embedded SDK with config', initSDKConfig);
 
@@ -242,19 +242,33 @@ export class ShopifyClient extends Api {
         }
     };
 
-    initApi (shopName: string, firebaseIdToken: string, cb: (error: any, data?: any) => void ): void {
-        let self = this;
-        // console.log('initApi', shopName, firebaseIdToken);
-        let url = `${this.apiBaseUrl}/api/${this.config.appName}/${shopName}/init/${firebaseIdToken}?callback=?`;
-        console.debug('initApi', url);
-        let jqxhr = $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
-            // console.log('greate you are signed in. shop:', data);  
-            self.ready = true; // TODO use event?
-            cb(null, data);
-        });
+    initApi (shopName: string, firebaseIdToken: string, callback?: (error: any, data?: any) => void ): Promise<any> {
 
-        jqxhr.fail((xhr: JQueryXHR, textStatus: string, errorThrown: string) => {
-            return cb(textStatus);
+        if (typeof(callback) === 'function') {
+            console.warn(new Error(`The callback of this method is marked as deprecated
+            and will be removed in the next version, use Prmoises instead`));
+        }
+
+        return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
+            let self = this;
+            // console.log('initApi', shopName, firebaseIdToken);
+            let url = `${this.apiBaseUrl}/api/${this.config.appName}/${shopName}/init/${firebaseIdToken}?callback=?`;
+            console.debug('initApi', url);
+            $.getJSON( url )
+            .done(function(data: JQueryXHR, textStatus: string, errorThrown: string) {
+                self.ready = true;
+                // console.log('Api.call result:', data);
+                if (typeof(callback) === 'function') {
+                    callback(null, data);
+                }
+                resolve(data);
+            })
+            .fail((xhr: JQueryXHR, textStatus: string, errorThrown: string) => {
+                if (typeof(callback) === 'function') {
+                    callback(textStatus);
+                }
+                reject(textStatus);
+            });
         });
     };
 
@@ -263,55 +277,93 @@ export class ShopifyClient extends Api {
      * Otherwise get access using this.getAccess with redirections
      * 
      */
-    signIn (shopName: string, callback: (error?: any, data?: any) => void ): void {
+    signIn (shopName: string, callback?: (error?: any, data?: any) => void ): Promise<any> {
         // console.log('signIn');
 
-        this.initFirebase();
-        let self = this;
+        if (typeof(callback) === 'function') {
+            console.warn(new Error(`The callback of this method is marked as deprecated
+            and will be removed in the next version, use Prmoises instead`));
+        }
 
-        let url = `${this.authBaseUrl}/token/${this.config.appName}/${shopName}?callback=?`;
-        $.getJSON(url).done((data: any, textStatus: string, jqXHR: JQueryXHR) => {
+        const self = this;
 
-            if (jqXHR.status == 404) {
-                console.error('Token not found');
-                self.getAccess(shopName);
-            }
-            
+        return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
 
-            if (typeof(data.firebaseToken) === 'string') {
+            this.initFirebase();
 
-                // console.log('microservice-auth result', data );
+            let url = `${this.authBaseUrl}/token/${this.config.appName}/${shopName}?callback=?`;
+            $.getJSON(url)
+            .done((data: any, textStatus: string, jqXHR: JQueryXHR) => {
 
-                self.config.firebase.customToken = data.firebaseToken;
-                // this.config.firebase.uid = data.firebaseUid; not needed 
+                if (jqXHR.status == 404) {
+                    console.error('Token not found');
+                    self.getAccess(shopName);
+                }
 
-                self.firebase.auth().signInWithCustomToken(data.firebaseToken).then(function (user) {
-                    self.config.firebase.user = user;
-                    // console.log('firebase user', user);
-                    user.getToken(/* forceRefresh */ true).then(function(firebaseIdToken) {
-                        // console.log('firebaseIdToken', firebaseIdToken);
-                        self.config.firebase.idToken = firebaseIdToken;
-                        // Send token to your backend via HTTPS
-                        self.initApi(shopName, firebaseIdToken, callback);
+                if (typeof(data.firebaseToken) === 'string') {
+
+                    // console.log('microservice-auth result', data );
+
+                    self.config.firebase.customToken = data.firebaseToken;
+                    // this.config.firebase.uid = data.firebaseUid; not needed 
+
+                    self.firebase.auth().signInWithCustomToken(data.firebaseToken)
+                    .then((user) => {
+                        self.config.firebase.user = user;
+                        // console.log('firebase user', user);
+                        user.getToken(/* forceRefresh */ true)
+                        .then(function(firebaseIdToken) {
+                            // console.log('firebaseIdToken', firebaseIdToken);
+                            self.config.firebase.idToken = firebaseIdToken;
+                            // Send token to your backend via HTTPS
+                            self.initApi(shopName, firebaseIdToken)
+                            .then((data) => {
+                                if (typeof(callback) === 'function') {
+                                    callback(null, data);
+                                }
+                                resolve(data);
+                            })
+                            .catch((reason) => {
+                                if (typeof(callback) === 'function') {
+                                    callback(reason);
+                                }
+                                reject(reason);
+                            });
+
+                        }).catch(function(error) {
+                            // Handle error
+                            if (typeof(callback) === 'function') {
+                                callback(error);
+                            }
+                            reject(error);
+                        });
 
                     }).catch(function(error) {
-                        // Handle error
-                        callback(error);
+                        // Handle Errors here.
+                        if (typeof(callback) === 'function') {
+                            callback(error);
+                        }
+                        reject(error);
                     });
+                } else {
+                    const error = new Error('Das hätte nicht passieren dürfen, bitte Microservice überprüfen.')
+                    console.error(error);
+                    if (typeof(callback) === 'function') {
+                        callback(error);
+                    }
+                    reject(error);
+                }
 
-                }).catch(function(error) {
-                    // Handle Errors here.
-                    callback(error);
-                });
-            } else {
-                console.error(new Error('Das hätte nicht passieren dürfen, bitte Microservice überprüfen.'));
-            }
-
-        }).fail((event, jqXHR: JQueryXHR, exception) => {
-            if (jqXHR.status == 404) {
-                console.error('Token not found');
-            }
-            self.getAccess(shopName);
+            }).fail((event, jqXHR: JQueryXHR, exception) => {
+                if (jqXHR.status == 404) {
+                    console.error('Token not found');
+                }
+                if (typeof(callback) === 'function') {
+                    callback('Token not found');
+                }
+                reject('Token not found');
+                self.getAccess(shopName);
+            });
         });
     };
 
