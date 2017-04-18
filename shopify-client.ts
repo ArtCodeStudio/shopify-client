@@ -310,8 +310,6 @@ export class ShopifyClient extends Api {
 
             this.initFirebase();
 
-            
-
             const url = `${this.authBaseUrl}/auth/${this.config.appName}/${shopName}/token?callback=?`;
             $.getJSON(url)
             .done((data: any, textStatus: string, jqXHR: JQueryXHR) => {
@@ -332,32 +330,19 @@ export class ShopifyClient extends Api {
                     .then((user) => {
                         self.config.firebase.user = user;
                         // console.log('firebase user', user);
-                        user.getToken(/* forceRefresh */ true)
-                        .then(function(firebaseIdToken) {
-                            // console.log('firebaseIdToken', firebaseIdToken);
-                            self.config.firebase.idToken = firebaseIdToken;
-                            // Send token to your backend via HTTPS
-                            self.initApi(shopName, firebaseIdToken)
-                            .then((data) => {
-                                if (self.isFunction(callback)) {
-                                    callback(null, data);
-                                }
-                                resolve(data);
-                            })
-                            .catch((reason) => {
-                                if (self.isFunction(callback)) {
-                                    callback(reason);
-                                }
-                                reject(reason);
-                            });
-
-                        }).catch(function(error) {
-                            // Handle error
-                            if (self.isFunction(callback)) {
-                                callback(error);
-                            }
-                            reject(error);
-                        });
+                        return user.getToken(/* forceRefresh */ true)
+                    })
+                    .then((firebaseIdToken) => {
+                        // console.log('firebaseIdToken', firebaseIdToken);
+                        self.config.firebase.idToken = firebaseIdToken;
+                        // Send token to your backend via HTTPS
+                        return self.initApi(shopName, firebaseIdToken)
+                    })
+                    .then((data) => {
+                        if (self.isFunction(callback)) {
+                            callback(null, data);
+                        }
+                        resolve(data);
 
                     }).catch(function(error) {
                         // Handle Errors here.
