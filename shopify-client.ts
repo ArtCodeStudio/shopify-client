@@ -257,7 +257,7 @@ export class ShopifyClient extends Api {
      */
     getAccess (shopName: string): string {
         console.log('getAccess', shopName);
-        const accessRedirectUrl = `${this.authBaseUrl}/redirect/${this.config.appName}/${shopName}`;
+        const accessRedirectUrl = `${this.authBaseUrl}/auth/${this.config.appName}/${shopName}/redirect`;
 
         // if in iframe redirect parent site
         if (this.inIframe()) {
@@ -310,7 +310,9 @@ export class ShopifyClient extends Api {
 
             this.initFirebase();
 
-            const url = `${this.authBaseUrl}/token/${this.config.appName}/${shopName}?callback=?`;
+            
+
+            const url = `${this.authBaseUrl}/auth/${this.config.appName}/${shopName}/token?callback=?`;
             $.getJSON(url)
             .done((data: any, textStatus: string, jqXHR: JQueryXHR) => {
 
