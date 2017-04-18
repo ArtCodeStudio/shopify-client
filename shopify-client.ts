@@ -55,18 +55,14 @@ export class Api {
     }
 
     /**
-     * API calls are based on these bindings: https://github.com/MONEI/Shopify-api-node
-     * But wrapped with or own middleware: https://github.com/JumpLinkNetwork/shopify-server
+     * Wrapps jQuery getJSON to use es6 Promises instead of jQuery's own implementation
      */
-    call (resource: string, method: string, params: any, callback?: (error?: any, data?: any) => void ): Promise<any> {
+    getJSON (url: string, callback?: (error?: any, data?: any) => void): Promise<any> {
         const self = this;
-        this.callbackDeprecated(callback, 'API.call');
-        const json = JSON.stringify(params || {});
-        const url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/${resource}/${method}?callback=?&json=${json}`;
-
-        // console.log('Api.call request:', url);
         return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
-            $.getJSON( url)
+            self.callbackDeprecated(callback, 'API.getJSON');
+
+            $.getJSON(url)
             .done((data: any, textStatus: string, jqXHR: JQueryXHR) => {
                 // console.log('Api.call result:', data);
                 if (self.isFunction(callback)) {
@@ -82,6 +78,17 @@ export class Api {
                 reject(textStatus);
             });
         });
+    }
+
+    /**
+     * API calls are based on these bindings: https://github.com/MONEI/Shopify-api-node
+     * But wrapped with or own middleware: https://github.com/JumpLinkNetwork/shopify-server
+     */
+    call (resource: string, method: string, params: any, callback?: (error?: any, data?: any) => void ): Promise<any> {
+        const json = JSON.stringify(params || {});
+        const url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/${resource}/${method}?callback=?&json=${json}`;
+        this.callbackDeprecated(callback, 'API.call');
+        return this.getJSON(url, callback);
     };
 }
 
@@ -134,9 +141,9 @@ export class ShopifyClient extends Api {
     getQueryParams(qs: string): any {
         qs = qs.split('+').join(' ');
 
-        let params = {},
-            tokens,
-            re = /[?&]?([^=]+)=([^&]*)/g;
+        const params = {};
+        let tokens;
+        const re = /[?&]?([^=]+)=([^&]*)/g;
 
         while (tokens = re.exec(qs)) {
             params[decodeURIComponent(tokens[1])] = decodeURIComponent(tokens[2]);
@@ -269,29 +276,12 @@ export class ShopifyClient extends Api {
     };
 
     initApi (shopName: string, firebaseIdToken: string, callback?: (error: any, data?: any) => void ): Promise<any> {
-
         const self = this;
-
-        return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
-
-            self.callbackDeprecated(callback, 'ShopifyClient.initApi');
-
-            const url = `${this.apiBaseUrl}/api/${this.config.appName}/${shopName}/init/${firebaseIdToken}?callback=?`;
-            $.getJSON( url )
-            .done((data: any, textStatus: string, jqXHR: JQueryXHR) => {
-                self.ready = true;
-                // console.log('Api.call result:', data);
-                if (self.isFunction(callback)) {
-                    callback(null, data);
-                }
-                resolve(data);
-            })
-            .fail((xhr: JQueryXHR, textStatus: string, errorThrown: string) => {
-                if (self.isFunction(callback)) {
-                    callback(textStatus);
-                }
-                reject(textStatus);
-            });
+        const url = `${this.apiBaseUrl}/api/${this.config.appName}/${shopName}/init/${firebaseIdToken}?callback=?`;
+        return this.getJSON(url, callback)
+        .then((data) => {
+            self.ready = true;
+            return data;
         });
     };
 
@@ -300,102 +290,42 @@ export class ShopifyClient extends Api {
      * Otherwise get access using this.getAccess with redirections
      */
     signIn (shopName: string, callback?: (error?: any, data?: any) => void ): Promise<any> {
-
         const self = this;
 
-        return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
-
-            self.callbackDeprecated(callback, 'ShopifyClient.signIn');
-
-
-            this.initFirebase();
-
-            const url = `${this.authBaseUrl}/auth/${this.config.appName}/${shopName}/token?callback=?`;
-            $.getJSON(url)
-            .done((data: any, textStatus: string, jqXHR: JQueryXHR) => {
-
-                if (jqXHR.status == 404) {
-                    console.error('Token not found');
-                    self.getAccess(shopName);
-                }
-
-                if (typeof(data.firebaseToken) === 'string') {
-
-                    // console.log('microservice-auth result', data );
-
-                    self.config.firebase.customToken = data.firebaseToken;
-                    // this.config.firebase.uid = data.firebaseUid; not needed 
-
-                    self.firebase.auth().signInWithCustomToken(data.firebaseToken)
-                    .then((user) => {
-                        self.config.firebase.user = user;
-                        // console.log('firebase user', user);
-                        return user.getToken(/* forceRefresh */ true)
-                    })
-                    .then((firebaseIdToken) => {
-                        // console.log('firebaseIdToken', firebaseIdToken);
-                        self.config.firebase.idToken = firebaseIdToken;
-                        // Send token to your backend via HTTPS
-                        return self.initApi(shopName, firebaseIdToken)
-                    })
-                    .then((data) => {
-                        if (self.isFunction(callback)) {
-                            callback(null, data);
-                        }
-                        resolve(data);
-
-                    }).catch(function(error) {
-                        // Handle Errors here.
-                        if (self.isFunction(callback)) {
-                            callback(error);
-                        }
-                        reject(error);
-                    });
-                } else {
-                    const error = new Error('Das hätte nicht passieren dürfen, bitte Microservice überprüfen.')
-                    console.error(error);
-                    if (self.isFunction(callback)) {
-                        callback(error);
-                    }
-                    reject(error);
-                }
-
-            }).fail((jqXHR: JQueryXHR, textStatus: string, errorThrown: any) => {
-                if (jqXHR.status === 404) {
-                    console.error('Token not found', textStatus);
-                }
-                if (self.isFunction(callback)) {
-                    callback(textStatus);
-                }
-                self.getAccess(shopName);
-                reject(textStatus);
-            });
+        self.callbackDeprecated(callback, 'ShopifyClient.signIn');
+        self.initFirebase();
+        const url = `${this.authBaseUrl}/auth/${this.config.appName}/${shopName}/token?callback=?`;
+        return self.getJSON(url, callback)
+        .then((data: any) => {
+            // console.log('microservice-auth result', data );
+            self.config.firebase.customToken = data.firebaseToken;
+            // this.config.firebase.uid = data.firebaseUid; not needed 
+            return self.firebase.auth().signInWithCustomToken(data.firebaseToken);
+        })
+        .then((user) => {
+            self.config.firebase.user = user;
+            // console.log('firebase user', user);
+            return user.getToken(/* forceRefresh */ true)
+        })
+        .then((firebaseIdToken) => {
+            // console.log('firebaseIdToken', firebaseIdToken);
+            self.config.firebase.idToken = firebaseIdToken;
+            // Send token to your backend via HTTPS
+            return self.initApi(shopName, firebaseIdToken);
+        }).catch((error) => {
+            // Handle Errors here.
+            if (self.isFunction(callback)) {
+                callback(error);
+            }
+            self.getAccess(shopName);
+            return error;
         });
     };
 
     singOut (accessToken: string, callback: (error?: any, data?: any) => void ): Promise<any> {
-        const self = this;
-
-        return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
-
-            self.callbackDeprecated(callback, 'ShopifyClient.singOut');
-
-            const url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/signout?callback=?`;
-
-            $.getJSON(url)
-            .done((data: any, textStatus: string, jqXHR: JQueryXHR) => {
-                if (self.isFunction(callback)) {
-                    callback(null, data);
-                }
-                resolve(data);
-            }).fail((jqXHR: JQueryXHR, textStatus: string, errorThrown: any) => {
-                if (self.isFunction(callback)) {
-                    callback(textStatus);
-                }
-                reject(textStatus);
-            });
-
-        });
+        this.callbackDeprecated(callback, 'ShopifyClient.singOut');
+        const url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/signout?callback=?`;
+        return this.getJSON(url, callback);
     };
 
     /**
@@ -408,7 +338,7 @@ export class ShopifyClient extends Api {
             return this.call(resource, method, params, callback);
         } else {
             return new Promise( (resolve: (value) => void, reject: (reason) => void) => {
-                reject(new Error('api not ready, try again..'));
+                reject(new Error('api not ready, try again later'));
             });
         }
     };
