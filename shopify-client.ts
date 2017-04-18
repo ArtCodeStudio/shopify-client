@@ -43,23 +43,44 @@ export class Api {
         this.apiBaseUrl = apiBaseUrl;
     }
 
+    protected isFunction = (func) => {
+        return typeof(func) === 'function';
+    }
+
+    protected callbackDeprecated (callback: (error?: any, data?: any) => void,  name: string ): void {
+        if (this.isFunction(callback)) {
+            console.warn(new Error(`The callback of ${name} is marked as deprecated
+            and will be removed in the next version, use Prmoises instead`));
+        }
+    }
+
     /**
      * API calls are based on these bindings: https://github.com/MONEI/Shopify-api-node
-     * But wrapped with or own microserive: https://git.mediamor.de/jumplink.eu/microservice-shopify
+     * But wrapped with or own middleware: https://github.com/JumpLinkNetwork/shopify-server
      */
-    call (resource: string, method: string, params: any, callback: (error?: any, data?: any) => void ): void {
-        console.warn('api: ', resource, method, params);
+    call (resource: string, method: string, params: any, callback?: (error?: any, data?: any) => void ): Promise<any> {
+        const self = this;
+        this.callbackDeprecated(callback, 'API.call');
+        const json = JSON.stringify(params || {});
+        const url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/${resource}/${method}?callback=?&json=${json}`;
 
-        let json = JSON.stringify(params || {});
-        let url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/${resource}/${method}?callback=?&json=${json}`;
-
-        let jqxhr = $.getJSON( url)
-        .done(function(data: JQueryXHR, textStatus: string, errorThrown: string) {
-            return callback(null, data);
-        })
-        .fail((data: JQueryXHR, textStatus: string, errorThrown: string) => {
-            console.error(data, textStatus, errorThrown);
-            return callback(textStatus);
+        // console.log('Api.call request:', url);
+        return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
+            $.getJSON( url)
+            .done((data: any, textStatus: string, jqXHR: JQueryXHR) => {
+                // console.log('Api.call result:', data);
+                if (self.isFunction(callback)) {
+                    callback(null, data);
+                }
+                resolve(data);
+            })
+            .fail((jqXHR: JQueryXHR, textStatus: string, errorThrown: any) => {
+                console.error(textStatus);
+                if (self.isFunction(callback)) {
+                    callback(textStatus);
+                }
+                reject(textStatus);
+            });
         });
     };
 }
@@ -124,31 +145,43 @@ export class ShopifyClient extends Api {
         return params;
     }
 
-    initEmbeddedSDK(protocol: string, shop: string, callback: (error?: any, data?: any) => void): any {
-        let initSDKConfig = {
-            apiKey: this.config.shopify.apiKey,
-            shopOrigin: protocol + shop,
-            debug: this.config.debug
-        };
+    initEmbeddedSDK(protocol: string, shop: string, callback?: (error?: any, data?: any) => void): Promise<any> {
 
-        let self = this;
+        return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
 
-        // console.log('init Embedded SDK with config', initSDKConfig);
+            const initSDKConfig = {
+                apiKey: this.config.shopify.apiKey,
+                shopOrigin: protocol + shop,
+                debug: this.config.debug
+            };
 
-        ShopifyApp.init(initSDKConfig);
+            const self = this;
 
-        // should be ready after success auth
-        ShopifyApp.ready(function () {
-            // console.log('READY YEA!');
+            // console.log('init Embedded SDK with config', initSDKConfig);
 
-            self.signIn(self.config.shopify.shopName, function(error, initApiRes) {
-                if(error) {
-                    callback(error, initApiRes);
-                    console.error(new Error(error));
-                    return self.getAccess(self.config.shopify.shopName);
-                }
-                callback(null, initApiRes);
+            this.callbackDeprecated(callback, 'ShopifyClient.initEmbeddedSDK');
 
+            ShopifyApp.init(initSDKConfig);
+
+            // should be ready after success auth
+            ShopifyApp.ready(() => {
+                // console.log('READY YEA!');
+
+                self.signIn(self.config.shopify.shopName)
+                .then((initApiRes) => {
+                    if (this.isFunction(callback)) {
+                        callback(null, initApiRes);
+                    }
+                    resolve(initApiRes);
+                })
+                .catch((error) => {
+                    console.error(error);
+                    if (this.isFunction(callback)) {
+                        callback(error);
+                    }
+                    self.getAccess(self.config.shopify.shopName);
+                    return reject(error);
+                })
             });
         });
 
@@ -159,17 +192,22 @@ export class ShopifyClient extends Api {
      * 
      * @see https://help.shopify.com/api/sdks/embedded-app-sdk/initialization
      */
-    initShopify(protocol: string, shop: string, shopName: string, callback: (error?: any, data?: any) => void): void {
-        // console.log('initShopify', protocol, shop, shopName);
+    initShopify(protocol: string, shop: string, shopName: string, callback?: (error?: any, data?: any) => void): Promise<any> {
+        this.callbackDeprecated(callback, 'ShopifyClient.initShopify');
 
         // init shopify if this is in iframe, if not get access and redirect back to the shopify app page
-        if(this.inIframe()) {
+        if (this.inIframe()) {
             // console.log('Backend is in iframe');
-            this.initEmbeddedSDK(protocol, shop, callback);
+            return this.initEmbeddedSDK(protocol, shop, callback);
         } else {
-            console.error('Backend is not in iframe');
-            this.getAccess(shopName); // get access and redirect back to the shopify app page
+            return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
+                const error = 'Backend is not in iframe';
+                console.error(error);
+                this.getAccess(shopName); // get access and redirect back to the shopify app page
+                reject(error);
+            });
         }
+
     }
 
     initFirebase(): any { // firebase.app.App {
@@ -196,18 +234,20 @@ export class ShopifyClient extends Api {
     /**
      * Set the shop domain and shop name by the shop domain in this.config.shopify
      */
-    setShop (shop: string): void {
+    setShop (shop: string): string {
         this.config.shopify.shop = shop;
         this.config.shopify.shopName = this.getShopName(this.config.shopify.shop);
+        return this.config.shopify.shop;
         // console.log('setShop', shop, this.config.shopify);
     };
 
     /**
      * Set the shop domain and shop name by the shop name in this.config.shopify
      */
-    setShopName (shopName: string): void {
+    setShopName (shopName: string): string {
         this.config.shopify.shop = this.getShop(shopName);
         this.config.shopify.shopName = shopName;
+        return this.config.shopify.shopName;
         // console.log('setShopName', shopName, this.config.shopify);
     };
 
@@ -215,9 +255,9 @@ export class ShopifyClient extends Api {
      * Initiates the sign-in flow using Shopify oauth sign in
      *
      */
-    getAccess (shopName: string): void {
+    getAccess (shopName: string): string {
         console.log('getAccess', shopName);
-        let accessRedirectUrl = `${this.authBaseUrl}/redirect/${this.config.appName}/${shopName}`;
+        const accessRedirectUrl = `${this.authBaseUrl}/redirect/${this.config.appName}/${shopName}`;
 
         // if in iframe redirect parent site
         if (this.inIframe()) {
@@ -225,90 +265,149 @@ export class ShopifyClient extends Api {
         } else {
             window.location.href = accessRedirectUrl;
         }
+        return window.location.href;
     };
 
-    initApi (shopName: string, firebaseIdToken: string, cb: (error: any, data?: any) => void ): void {
-        let self = this;
-        // console.log('initApi', shopName, firebaseIdToken);
-        let url = `${this.apiBaseUrl}/api/${this.config.appName}/${shopName}/init/${firebaseIdToken}?callback=?`;
-        console.debug('initApi', url);
-        let jqxhr = $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
-            // console.log('greate you are signed in. shop:', data);  
-            self.ready = true; // TODO use event?
-            cb(null, data);
-        });
+    initApi (shopName: string, firebaseIdToken: string, callback?: (error: any, data?: any) => void ): Promise<any> {
 
-        jqxhr.fail((xhr: JQueryXHR, textStatus: string, errorThrown: string) => {
-            return cb(textStatus);
+        const self = this;
+
+        return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
+
+            self.callbackDeprecated(callback, 'ShopifyClient.initApi');
+
+            const url = `${this.apiBaseUrl}/api/${this.config.appName}/${shopName}/init/${firebaseIdToken}?callback=?`;
+            $.getJSON( url )
+            .done((data: any, textStatus: string, jqXHR: JQueryXHR) => {
+                self.ready = true;
+                // console.log('Api.call result:', data);
+                if (self.isFunction(callback)) {
+                    callback(null, data);
+                }
+                resolve(data);
+            })
+            .fail((xhr: JQueryXHR, textStatus: string, errorThrown: string) => {
+                if (self.isFunction(callback)) {
+                    callback(textStatus);
+                }
+                reject(textStatus);
+            });
         });
     };
 
     /**
      * Get the Access tokens for shopify and firebase if these have already been set
      * Otherwise get access using this.getAccess with redirections
-     * 
      */
-    signIn (shopName: string, callback: (error?: any, data?: any) => void ): void {
-        // console.log('signIn');
+    signIn (shopName: string, callback?: (error?: any, data?: any) => void ): Promise<any> {
 
-        this.initFirebase();
-        let self = this;
+        const self = this;
 
-        let url = `${this.authBaseUrl}/token/${this.config.appName}/${shopName}?callback=?`;
-        $.getJSON(url).done((data: any, textStatus: string, jqXHR: JQueryXHR) => {
+        return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
 
-            if (jqXHR.status == 404) {
-                console.error('Token not found');
-                self.getAccess(shopName);
-            }
-            
+            self.callbackDeprecated(callback, 'ShopifyClient.signIn');
 
-            if (typeof(data.firebaseToken) === 'string') {
 
-                // console.log('microservice-auth result', data );
+            this.initFirebase();
 
-                self.config.firebase.customToken = data.firebaseToken;
-                // this.config.firebase.uid = data.firebaseUid; not needed 
+            const url = `${this.authBaseUrl}/token/${this.config.appName}/${shopName}?callback=?`;
+            $.getJSON(url)
+            .done((data: any, textStatus: string, jqXHR: JQueryXHR) => {
 
-                self.firebase.auth().signInWithCustomToken(data.firebaseToken).then(function (user) {
-                    self.config.firebase.user = user;
-                    // console.log('firebase user', user);
-                    user.getToken(/* forceRefresh */ true).then(function(firebaseIdToken) {
-                        // console.log('firebaseIdToken', firebaseIdToken);
-                        self.config.firebase.idToken = firebaseIdToken;
-                        // Send token to your backend via HTTPS
-                        self.initApi(shopName, firebaseIdToken, callback);
+                if (jqXHR.status == 404) {
+                    console.error('Token not found');
+                    self.getAccess(shopName);
+                }
+
+                if (typeof(data.firebaseToken) === 'string') {
+
+                    // console.log('microservice-auth result', data );
+
+                    self.config.firebase.customToken = data.firebaseToken;
+                    // this.config.firebase.uid = data.firebaseUid; not needed 
+
+                    self.firebase.auth().signInWithCustomToken(data.firebaseToken)
+                    .then((user) => {
+                        self.config.firebase.user = user;
+                        // console.log('firebase user', user);
+                        user.getToken(/* forceRefresh */ true)
+                        .then(function(firebaseIdToken) {
+                            // console.log('firebaseIdToken', firebaseIdToken);
+                            self.config.firebase.idToken = firebaseIdToken;
+                            // Send token to your backend via HTTPS
+                            self.initApi(shopName, firebaseIdToken)
+                            .then((data) => {
+                                if (self.isFunction(callback)) {
+                                    callback(null, data);
+                                }
+                                resolve(data);
+                            })
+                            .catch((reason) => {
+                                if (self.isFunction(callback)) {
+                                    callback(reason);
+                                }
+                                reject(reason);
+                            });
+
+                        }).catch(function(error) {
+                            // Handle error
+                            if (self.isFunction(callback)) {
+                                callback(error);
+                            }
+                            reject(error);
+                        });
 
                     }).catch(function(error) {
-                        // Handle error
-                        callback(error);
+                        // Handle Errors here.
+                        if (self.isFunction(callback)) {
+                            callback(error);
+                        }
+                        reject(error);
                     });
+                } else {
+                    const error = new Error('Das hätte nicht passieren dürfen, bitte Microservice überprüfen.')
+                    console.error(error);
+                    if (self.isFunction(callback)) {
+                        callback(error);
+                    }
+                    reject(error);
+                }
 
-                }).catch(function(error) {
-                    // Handle Errors here.
-                    callback(error);
-                });
-            } else {
-                console.error(new Error('Das hätte nicht passieren dürfen, bitte Microservice überprüfen.'));
-            }
-
-        }).fail((event, jqXHR: JQueryXHR, exception) => {
-            if (jqXHR.status == 404) {
-                console.error('Token not found');
-            }
-            self.getAccess(shopName);
+            }).fail((jqXHR: JQueryXHR, textStatus: string, errorThrown: any) => {
+                if (jqXHR.status === 404) {
+                    console.error('Token not found', textStatus);
+                }
+                if (self.isFunction(callback)) {
+                    callback(textStatus);
+                }
+                self.getAccess(shopName);
+                reject(textStatus);
+            });
         });
     };
 
-    singOut (accessToken: string, callback: (error?: any, data?: any) => void ): void {
-        let url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/signout?callback=?`;
-        let jqxhr = $.getJSON( url, (data: any, textStatus: string, jqXHR: JQueryXHR) => {
-            // console.log('you are signed out:', data);
-            return callback(null, data);
-        });
+    singOut (accessToken: string, callback: (error?: any, data?: any) => void ): Promise<any> {
+        const self = this;
 
-        jqxhr.fail((xhr: JQueryXHR, textStatus: string, errorThrown: string) => {
-            return callback(textStatus);
+        return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
+
+            self.callbackDeprecated(callback, 'ShopifyClient.singOut');
+
+            const url = `${this.apiBaseUrl}/api/${this.config.appName}/${this.config.shopify.shopName}/signout?callback=?`;
+
+            $.getJSON(url)
+            .done((data: any, textStatus: string, jqXHR: JQueryXHR) => {
+                if (self.isFunction(callback)) {
+                    callback(null, data);
+                }
+                resolve(data);
+            }).fail((jqXHR: JQueryXHR, textStatus: string, errorThrown: any) => {
+                if (self.isFunction(callback)) {
+                    callback(textStatus);
+                }
+                reject(textStatus);
+            });
+
         });
     };
 
@@ -316,134 +415,181 @@ export class ShopifyClient extends Api {
      * API calls are based on these bindings: https://github.com/MONEI/Shopify-api-node
      */
     api (resource: string, method: string, params: any, callback?: (error?: any, data?: any) => void ): Promise<any> {
-        let self = this;
-        return new Promise( (resolve : (value) => void, reject: (reason) => void) => {
-            if (self.ready) {
-                self.call(resource, method, params, (error, data) => {
-                    if (error) {
-                        reject(error);
-                    } else {
-                        resolve(data);
-                    }
-                    if(callback) {
-                        callback(error, data);
-                    }
-                });
-                return;
-            } else {
+        this.callbackDeprecated(callback, 'ShopifyClient.api');
+
+        if (this.ready) {
+            return this.call(resource, method, params, callback);
+        } else {
+            return new Promise( (resolve: (value) => void, reject: (reason) => void) => {
                 reject(new Error('api not ready, try again..'));
-            }
-        });
+            });
+        }
     };
 
-    deleteMetafield(id, callback: (error?: any, data?: any) => void) {
-        let self = this;
-        self.api('metafield', 'delete', id, ( err , result) => {
-            if (err) {
-                return callback(err);
-            }
-            return callback(null, result);
-        });
+    deleteMetafield(id, callback?: (error?: any, data?: any) => void): Promise<any> {
+        this.callbackDeprecated(callback, 'ShopifyClient.deleteMetafield');
+        return this.call('metafield', 'delete', {id: id}, callback);
     }
 
-    deleteAllMetafield(ids: Array<Number>, callback: (error?: any, data?: any) => void) {
-        let self = this;
-
+    deleteAllMetafield(ids: Array<Number>, callback?: (error?: any, data?: any) => void): Promise<any> {
+        this.callbackDeprecated(callback, 'ShopifyClient.deleteAllMetafield');
         console.log('deleteAllMetafield', ids);
-        self.api('metafield', 'deleteAll', {ids: ids}, ( err , result) => {
-            if (err) {
-                return callback(err);
-            }
-            return callback(null, result);
-        });
+        return this.api('metafield', 'deleteAll', {ids: ids}, callback);
     }
 
-    listMetafieldByProduct(productId, callback: (error?: any, data?: any) => void) {
-        let self = this;
-        self.api('metafield', 'list', {
+    listMetafieldByProduct(productId, callback?: (error?: any, data?: any) => void): Promise<any> {
+        this.callbackDeprecated(callback, 'ShopifyClient.listMetafieldByProduct');
+        return this.api('metafield', 'list', {
             metafield: {
                 owner_resource: 'product',
                 owner_id: productId
             }
-        }, ( err , productMetafields) => {
-            if (err) {
-                return callback(err);
-            }
-            return callback(null, productMetafields);
-        });
+        }, callback);
     }
 
-    listMetafieldByCustomer(customerId, callback: (error?: any, data?: any) => void) {
-        let self = this;
-        self.api('metafield', 'list', {
+    listMetafieldByCustomer(customerId, callback: (error?: any, data?: any) => void): Promise<any> {
+        this.callbackDeprecated(callback, 'ShopifyClient.listMetafieldByCustomer');
+        return this.api('metafield', 'list', {
             metafield: {
                 owner_resource: 'customer',
                 owner_id: customerId
             }
-        }, ( err , customerMetafields) => {
-            if (err) {
-                return callback(err);
+        }, callback);
+    }
+
+    listAllProduct(cache: boolean, fields, callback: (error?: any, data?: any) => void): Promise<any> {
+        console.log('listAllProduct', cache, fields);
+        const self = this;
+
+        self.callbackDeprecated(callback, 'ShopifyClient.listAllProduct');
+
+        return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
+
+            if (cache && self.cache && self.cache.listAllProduct && self.cache.listAllProduct[fields]) {
+                if (self.isFunction(callback)) {
+                    callback(null, self.cache.listAllProduct[fields]);
+                }
+                resolve(self.cache.listAllProduct[fields]);
             }
-            return callback(null, customerMetafields);
+            self.api('product', 'listAll', {fields: fields})
+            .then((data) => {
+                if (cache) {
+                    self.cache.listAllProduct[fields] = data;
+                }
+                if (self.isFunction(callback)) {
+                    callback(null, self.cache.listAllProduct[fields]);
+                }
+                resolve(self.cache.listAllProduct[fields]);
+            })
+            .catch((error) => {
+                if (self.isFunction(callback)) {
+                    callback(error);
+                }
+                return reject(error);
+            });
+
         });
     }
 
-    listAllProduct(cache, fields, callback: (error?: any, data?: any) => void) {
-        // console.log('listAllProduct', cache, fields);
-        let self = this;
-        if (cache && self.cache && self.cache.listAllProduct && self.cache.listAllProduct[fields]) {
-            return callback(null, self.cache.listAllProduct[fields]);
-        }
-        self.api('product', 'listAll', {fields: fields}, (error, data) => {
-            if (!error && cache) {
-                self.cache.listAllProduct[fields] = data;
-            }
-            callback(error, data);
-        });
-    }
-
-    listAllCustomer(cache, fields, callback: (error?: any, data?: any) => void) {
+    listAllCustomer(cache: boolean, fields, callback: (error?: any, data?: any) => void): Promise<any> {
         console.log('listAllCustomer', cache, fields);
-        let self = this;
-        if (cache && self.cache && self.cache.listAllCustomer && self.cache.listAllCustomer[fields]) {
-            return callback(null, self.cache.listAllCustomer[fields]);
-        }
-        self.api('customer', 'listAll', {fields: fields}, (error, data) => {
-            console.log('customer listAll');
-            if (!error && cache) {
-                self.cache.listAllCustomer[fields] = data;
+        const self = this;
+
+        self.callbackDeprecated(callback, 'ShopifyClient.listAllCustomer');
+
+        return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
+
+            if (cache && self.cache && self.cache.listAllCustomer && self.cache.listAllCustomer[fields]) {
+                if (self.isFunction(callback)) {
+                    callback(null, self.cache.listAllCustomer[fields]);
+                }
+                resolve(self.cache.listAllCustomer[fields]);
             }
-            callback(error, data);
+            self.api('customer', 'listAll', {fields: fields})
+            .then((data) => {
+                if (cache) {
+                    self.cache.listAllCustomer[fields] = data;
+                }
+                if (self.isFunction(callback)) {
+                    callback(null, self.cache.listAllCustomer[fields]);
+                }
+                resolve(self.cache.listAllCustomer[fields]);
+            })
+            .catch((error) => {
+                if (self.isFunction(callback)) {
+                    callback(error);
+                }
+                return reject(error);
+            });
+
         });
     }
 
-    listAllSmartCollection(cache, fields, callback: (error?: any, data?: any) => void) {
+    listAllSmartCollection(cache: boolean, fields, callback: (error?: any, data?: any) => void): Promise<any> {
         console.log('shopify-client: listAllSmartCollection', cache, fields);
-        let self = this;
-        if (cache && self.cache && self.cache.listAllSmartCollection && self.cache.listAllSmartCollection[fields]) {
-            return callback(null, self.cache.listAllSmartCollection[fields]);
-        }
-        self.api('smartCollection', 'listAll', {fields: fields}, (error, data) => {
-            console.log('api callback: smartCollection listAll');
-            if (!error && cache) {
-                self.cache.listAllSmartCollection[fields] = data;
+        const self = this;
+
+        self.callbackDeprecated(callback, 'ShopifyClient.listAllSmartCollection');
+
+        return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
+
+            if (cache && self.cache && self.cache.listAllSmartCollection && self.cache.listAllSmartCollection[fields]) {
+                if (self.isFunction(callback)) {
+                    callback(null, self.cache.listAllSmartCollection[fields]);
+                }
+                resolve(self.cache.listAllSmartCollection[fields]);
             }
-            callback(error, data);
+            self.api('smartCollection', 'listAll', {fields: fields})
+            .then((data) => {
+                if (cache) {
+                    self.cache.listAllSmartCollection[fields] = data;
+                }
+                if (self.isFunction(callback)) {
+                    callback(null, self.cache.listAllSmartCollection[fields]);
+                }
+                resolve(self.cache.listAllSmartCollection[fields]);
+            })
+            .catch((error) => {
+                if (self.isFunction(callback)) {
+                    callback(error);
+                }
+                return reject(error);
+            });
+
         });
     }
 
-    listAllCustomCollection(cache, fields, callback: (error?: any, data?: any) => void) {
+    listAllCustomCollection(cache: boolean, fields, callback: (error?: any, data?: any) => void): Promise<any> {
         console.log('shopify-client: listAllCustomCollection', cache, fields);
-        let self = this;
-        if (cache && self.cache && self.cache.listAllCustomCollection && self.cache.listAllCustomCollection[fields]) {
-            return callback(null, self.cache.listAllCustomCollection[fields]);
-        }
-        self.api('customCollection', 'listAll', {fields: fields}, (error, data) => {
-            console.log('api callback: customCollection listAll');
-            if (!error && cache) {
-                self.cache.listAllCustomCollection[fields] = data;
+        const self = this;
+
+        self.callbackDeprecated(callback, 'ShopifyClient.listAllCustomCollection');
+
+        return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
+
+            if (cache && self.cache && self.cache.listAllCustomCollection && self.cache.listAllCustomCollection[fields]) {
+                if (self.isFunction(callback)) {
+                    callback(null, self.cache.listAllCustomCollection[fields]);
+                }
+                resolve(self.cache.listAllCustomCollection[fields]);
             }
-            callback(error, data);
+            self.api('customCollection', 'listAll', {fields: fields})
+            .then((data) => {
+                if (cache) {
+                    self.cache.listAllCustomCollection[fields] = data;
+                }
+                if (self.isFunction(callback)) {
+                    callback(null, self.cache.listAllCustomCollection[fields]);
+                }
+                resolve(self.cache.listAllCustomCollection[fields]);
+            })
+            .catch((error) => {
+                if (self.isFunction(callback)) {
+                    callback(error);
+                }
+                return reject(error);
+            });
+
         });
     }
 

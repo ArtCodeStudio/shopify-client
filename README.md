@@ -1,3 +1,7 @@
 # shopify-client
 
-JavaScript-Framework zur Kommunikation mit den Microservices und dem Shopify Embedded App SDK
+Angular library to use the REST APIs of our [shopify-server](https://github.com/JumpLinkNetwork/shopify-server) koa middleware and authenticates your app user using the [Shopify Embedded App SDK](https://help.shopify.com/api/sdks/shopify-apps/embedded-app-sdk).
+
+Or in short, together with shopify-client and shopify-server you write Shopify Apps in Angular, easily.
+
+More information in our [wiki](https://git.mediamor.de/jumplink.eu/shopify-client/wiki).
