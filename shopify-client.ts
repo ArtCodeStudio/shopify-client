@@ -186,7 +186,7 @@ export class ShopifyClient extends Api {
                     if (this.isFunction(callback)) {
                         callback(error);
                     }
-                    self.getAccess(self.config.shopify.shopName);
+                    self.redirect(self.config.shopify.shopName);
                     return reject(error);
                 })
             });
@@ -210,14 +210,14 @@ export class ShopifyClient extends Api {
             return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
                 const error = 'Backend is not in iframe';
                 console.error(error);
-                this.getAccess(shopName); // get access and redirect back to the shopify app page
+                this.redirect(shopName); // get access and redirect back to the shopify app page
                 reject(error);
             });
         }
 
     }
 
-    initFirebase(): any { // firebase.app.App {
+    initFirebase(): any {
         // console.log('initFirebase');
         return this.firebase = firebase.initializeApp(this.config.firebase);
     }
@@ -262,8 +262,8 @@ export class ShopifyClient extends Api {
      * Initiates the sign-in flow using Shopify oauth sign in
      *
      */
-    getAccess (shopName: string): string {
-        console.log('getAccess', shopName);
+    redirect (shopName: string): string {
+        console.log('redirect', shopName);
         const accessRedirectUrl = `${this.authBaseUrl}/auth/${this.config.appName}/${shopName}/redirect`;
 
         // if in iframe redirect parent site
@@ -287,7 +287,7 @@ export class ShopifyClient extends Api {
 
     /**
      * Get the Access tokens for shopify and firebase if these have already been set
-     * Otherwise get access using this.getAccess with redirections
+     * Otherwise get access using this.redirect with redirections
      */
     signIn (shopName: string, callback?: (error?: any, data?: any) => void ): Promise<any> {
         const self = this;
@@ -317,7 +317,7 @@ export class ShopifyClient extends Api {
             if (self.isFunction(callback)) {
                 callback(error);
             }
-            self.getAccess(shopName);
+            self.redirect(shopName);
             return error;
         });
     };
