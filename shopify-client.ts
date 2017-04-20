@@ -187,7 +187,7 @@ export class ShopifyClient extends Api {
                         callback(error);
                     }
                     self.redirect(self.config.shopify.shopName);
-                    return reject(error);
+                    reject(error);
                 })
             });
         });
@@ -200,17 +200,18 @@ export class ShopifyClient extends Api {
      * @see https://help.shopify.com/api/sdks/embedded-app-sdk/initialization
      */
     initShopify(protocol: string, shop: string, shopName: string, callback?: (error?: any, data?: any) => void): Promise<any> {
-        this.callbackDeprecated(callback, 'ShopifyClient.initShopify');
+        const self = this;
+        self.callbackDeprecated(callback, 'ShopifyClient.initShopify');
 
         // init shopify if this is in iframe, if not get access and redirect back to the shopify app page
-        if (this.inIframe()) {
+        if (self.inIframe()) {
             // console.log('Backend is in iframe');
-            return this.initEmbeddedSDK(protocol, shop, callback);
+            return self.initEmbeddedSDK(protocol, shop, callback);
         } else {
             return new Promise<any>( (resolve: (value) => void, reject: (reason) => void) => {
                 const error = 'Backend is not in iframe';
                 console.error(error);
-                this.redirect(shopName); // get access and redirect back to the shopify app page
+                self.redirect(shopName); // get access and redirect back to the shopify app page
                 reject(error);
             });
         }
@@ -259,7 +260,7 @@ export class ShopifyClient extends Api {
     };
 
     /**
-     * Initiates the sign-in flow using Shopify oauth sign in
+     * Initiates the sign-in flow using Shopify oauth sign in and redirection
      *
      */
     redirect (shopName: string): string {
@@ -275,6 +276,10 @@ export class ShopifyClient extends Api {
         return window.location.href;
     };
 
+    /**
+     * Initiates the api and take a shop.get request to test if the api is working
+     *
+     */
     initApi (shopName: string, firebaseIdToken: string, callback?: (error: any, data?: any) => void ): Promise<any> {
         const self = this;
         const url = `${this.apiBaseUrl}/api/${this.config.appName}/${shopName}/init/${firebaseIdToken}?callback=?`;
@@ -287,15 +292,14 @@ export class ShopifyClient extends Api {
 
     /**
      * Get the Access tokens for shopify and firebase if these have already been set
-     * Otherwise get access using this.redirect with redirections
+     * Otherwise fire an error
      */
-    signIn (shopName: string, callback?: (error?: any, data?: any) => void ): Promise<any> {
+    signIn (shopName: string ): Promise<any> {
         const self = this;
 
-        self.callbackDeprecated(callback, 'ShopifyClient.signIn');
         self.initFirebase();
         const url = `${this.authBaseUrl}/auth/${this.config.appName}/${shopName}/token?callback=?`;
-        return self.getJSON(url, callback)
+        return self.getJSON(url)
         .then((data: any) => {
             // console.log('microservice-auth result', data );
             self.config.firebase.customToken = data.firebaseToken;
@@ -312,13 +316,6 @@ export class ShopifyClient extends Api {
             self.config.firebase.idToken = firebaseIdToken;
             // Send token to your backend via HTTPS
             return self.initApi(shopName, firebaseIdToken);
-        }).catch((error) => {
-            // Handle Errors here.
-            if (self.isFunction(callback)) {
-                callback(error);
-            }
-            self.redirect(shopName);
-            return error;
         });
     };
 
