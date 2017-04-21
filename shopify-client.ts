@@ -1,5 +1,5 @@
-/// <reference path='node_modules/@types/jquery/index.d.ts' />
-/// <reference path='node_modules/@types/underscore/index.d.ts' />
+/// <reference path='jquery.d.ts' />
+/// <reference path='underscore.d.ts' />
 /// <reference path='firebase.d.ts' />
 
 import { shopify } from './shopifyEASDK';

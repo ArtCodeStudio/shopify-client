@@ -1,19 +1,26 @@
 {
-  "name": "shopify-client",
-  "version": "1.0.0",
+  "author": {
+    "name": "Pascal Garber"
+  },
+  "dependencies": {
+    "@types/jquery": "^2.0.34",
+    "@types/underscore": "^1.7.36"
+  },
   "description": "JavaScript-Framework zur Kommunikation mit den JumpLink Microservices und dem Shopify Embedded App SDK",
+  "devDependencies": {
+  },
+  "gitHead": "4b0e1dd7de8071b6c3787095e1ed82f88090cd59",
+  "license": "MIT",
   "main": "shopify-client.js",
+  "name": "shopify-client",
+  "optionalDependencies": {},
+  "readmeFilename": "README.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JumpLinkNetwork/shopify-client.git"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://git.mediamor.de/jumplink.eu/shopify-client.git"
-  },
-  "author": "Pascal Garber",
-  "license": "MIT",
-  "devDependencies": {
-    "@types/jquery": "^2.0.34",
-    "@types/underscore": "^1.7.36"
-  }
+  "version": "1.0.0"
 }
