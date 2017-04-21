@@ -4,4 +4,4 @@ Angular library to use the REST APIs of our [shopify-server](https://github.com/
 
 Or in short, together with shopify-client and shopify-server you write Shopify Apps in Angular, easily.
 
-More information in our [wiki](https://git.mediamor.de/jumplink.eu/shopify-client/wiki).
+More information in our [wiki](https://github.com/JumpLink/shopify-client/wiki).
