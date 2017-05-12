@@ -73,11 +73,6 @@ declare const ShopifyApp: shopify.EASDK;
  * }
  * ```
  *
- * # TODO
- * * Database Adapter to make it possible to use another Database instead of Firebase Realtime Database
- * * Remove Callbacks, just use Promises
- * * More Dokumentation
- *
  * @export
  * @class ShopifyClient
  * @extends {Api}
