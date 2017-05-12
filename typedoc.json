@@ -1,0 +1,17 @@
+{
+  "out": "docs/",
+  "name": "shopify-client",
+  "readme": "README.md",
+  "mode": "modules",
+  "target": "ES5",
+  "ignoreCompilerErrors": "true",
+  "experimentalDecorators": "true",
+  "emitDecoratorMetadata": "true",
+  "moduleResolution": "node",
+  "preserveConstEnums": "true",
+  "stripInternal": "true",
+  "suppressExcessPropertyErrors": "true",
+  "suppressImplicitAnyIndexErrors": "true",
+  "module": "commonjs",
+  "theme": "default"
+}

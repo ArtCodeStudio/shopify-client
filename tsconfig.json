@@ -2,12 +2,15 @@
     "compilerOptions": {
         "sourceMap": true,
         "declaration": true,
-        "target": "es5",
+        "target": "es2015",
         "module": "system",
         "experimentalDecorators": true,
-        "outFile": "shopify-client.js"
+        "outFile": "ShopifyClient.js",
+        "typeRoots": [
+            "node_modules/@types"
+        ]
     },
     "files": [
-        "shopify-client.ts"
+        "ShopifyClient.ts"
     ]
 }
